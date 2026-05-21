@@ -1,23 +1,10 @@
 /**
- * AIKeep24-Lite - Observer (변경 감지 + 자동 저장)
- *
- * 기존 AIKeep24 observer.js 포팅.
- * 변경점:
- *  - CK → CKL 네임스페이스
- *  - summarizeAll() 제거 → saveChunkIfChanged() 호출 (LLM 없음)
- *  - checkPreviousContext() 제거 (INJ 기능 없음)
- *  - AUTORUN_IDLE_MS → AUTOSAVE_IDLE_MS
- *  - ensureUI: #ckl-panel 기준으로 변경
+ * AIKeep24 - Observer (변경 감지 + 오토런)
+ * 해시 기반 변경 감지 + 5분 idle 자동 실행
  */
 (function() {
-  'use strict';
+  var CKL = window.CKLL;
 
-  var CKL = window.CKL;
-
-  /**
-   * 현재 턴 수를 확인하고, 새 턴이 감지되면 자동 저장 타이머를 재설정한다.
-   * burst(+50 이상) 감지 시 자동 저장 건너뜀 — 수동 저장 유도.
-   */
   CKL.checkForNewTurns = function() {
     var current = CKL.extractTurns();
     if (current.length > CKL.lastTurnCount) {
@@ -30,35 +17,34 @@
         CKL.autoSaveTriggered = false;
         scheduleAutoSave();
       } else {
-        // 페이지 로드 시 기존 대화 일괄 감지 → 자동 저장 스킵
-        console.log('[CKL] Burst detected (+' + diff + '), auto-save skipped.');
+        console.log('[CKL] Burst detected (+' + diff + '), auto-run skipped. Use Run button.');
         CKL.autoSaveTriggered = true;
       }
     }
   };
 
   /**
-   * 자동 저장 스케줄러.
-   * 마지막 새 턴 감지 후 AUTOSAVE_IDLE_MS 동안 추가 턴이 없으면 저장 실행.
-   * 대화 진행 중에는 절대 트리거하지 않는다.
+   * 오토런: 마지막 새 턴 감지 후 5분간 추가 턴 없을 때만 자동 실행
+   * 대화 중에는 절대 트리거하지 않음
    */
   function scheduleAutoSave() {
     if (CKL.autoSaveTimer) clearTimeout(CKL.autoSaveTimer);
-
     CKL.autoSaveTimer = setTimeout(function() {
-      var elapsed = Date.now() - CKL.lastNewTurnTime;
-
-      // idle 시간 미달: 그 사이 새 턴이 왔음 → 다시 대기
+      // 5분 후 재확인: 그 사이 새 턴이 있었으면 다시 대기
+      var now = Date.now();
+      var elapsed = now - CKL.lastNewTurnTime;
       if (elapsed < CKL.CONFIG.AUTOSAVE_IDLE_MS - 1000) {
-        console.log('[CKL] AutoSave deferred (' + Math.round(elapsed / 1000) + 's elapsed)');
+        // 아직 idle 시간 안 됨 (다른 턴이 중간에 왔음)
+        console.log('[CKL] AutoSave deferred, not idle enough (' + Math.round(elapsed / 1000) + 's)');
         scheduleAutoSave();
         return;
       }
 
       if (!CKL.autoSaveTriggered && !CKL.isRunning && CKL.enabled && CKL.lastTurnCount >= 2) {
+        // 해시 비교로 실제 변경 확인
         var turns = CKL.extractTurns();
         var chatId = CKL.getChatId();
-        var hashKey = 'ckl_last_hash_' + chatId;
+        var hashKey = 'ck_last_hash_' + chatId;
         var currentHash = CKL.computeTurnHash(turns);
 
         chrome.storage.local.get([hashKey], function(stored) {
@@ -76,19 +62,15 @@
     }, CKL.CONFIG.AUTOSAVE_IDLE_MS);
   }
 
-  /** MutationObserver: DOM 변경 시 1초 디바운스 후 턴 수 확인 */
   CKL.observer = new MutationObserver(function() {
     clearTimeout(window._cklDebounce);
     window._cklDebounce = setTimeout(CKL.checkForNewTurns, 1000);
   });
 
-  /**
-   * UI 패널이 없으면 삽입한다.
-   * content.js의 init 루프에서 호출.
-   */
+
   CKL.ensureUI = function() {
     if (!document.getElementById('ckl-panel') && document.body) {
-      console.log('[CKL] Inserting ckl-panel');
+      console.log('[CKL] Inserting ck-panel');
       CKL.createUI();
     }
   };

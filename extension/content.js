@@ -1,234 +1,51 @@
 /**
- * AIKeep24-Lite - content.js
- *
- * 진입점. 모든 모듈 로드 후 실행된다.
- * v0.1.0 역할:
- *  1. DOM 안정화 대기 후 UI 삽입
- *  2. MutationObserver 시작
- *  3. saveChunkIfChanged 구현 (DOM 추출 → IndexedDB 저장)
- *  4. SNAP 버튼 핸들러 연결
+ * AIKeep24-Lite - Entry Point
+ * 원본 AIKeep24 content.js 패턴 그대로 유지.
+ * 모듈 로드 순서: config -> dom-parser -> ngram -> storage/* -> search/* -> observer -> ui -> content
  */
 (function() {
-  'use strict';
-
   var CKL = window.CKL;
 
-  /**
-   * 현재 세션의 미저장 턴을 청크로 저장한다.
-   * 해시 비교로 중복 저장을 방지한다.
-   * 자동 저장(observer)과 수동 저장(버튼) 양쪽에서 호출된다.
-   */
-  CKL.saveChunkIfChanged = function() {
-    if (CKL.shouldSkipConversation()) {
-      console.log('[CKL] Skipping: image/art conversation');
-      return;
-    }
-
-    CKL.isRunning = true;
-    var turns    = CKL.extractTurns();
-    var chatId   = CKL.getChatId();
-    var hashKey  = 'ckl_last_hash_' + chatId;
-    var currentHash = CKL.computeTurnHash(turns);
-
-    if (turns.length < 2) {
-      console.log('[CKL] Not enough turns (' + turns.length + '), skip save');
-      CKL.isRunning = false;
-      return;
-    }
-
-    chrome.storage.local.get([hashKey, 'ckl_saved_turns_' + chatId], function(stored) {
-      var savedHash  = stored[hashKey] || '';
-      var savedTurns = stored['ckl_saved_turns_' + chatId] || 0;
-
-      if (savedHash === currentHash) {
-        console.log('[CKL] Hash unchanged, skip save');
-        CKL.isRunning = false;
-        CKL.updateStatus('변경 없음');
-        return;
-      }
-
-      // 신규 턴 범위 계산
-      var turnStart = savedTurns;
-      var turnEnd   = turns.length - 1;
-      var newTurns  = turns.slice(turnStart);
-
-      if (newTurns.length === 0) {
-        CKL.isRunning = false;
-        return;
-      }
-
-      var chunk = {
-        chunk_id:    CKL.generateUUID(),
-        session_id:  chatId,
-        session_url: window.location.href,
-        platform:    CKL.getPlatformKey(),
-        turn_start:  turnStart,
-        turn_end:    turnEnd,
-        raw_content: CKL.formatChunk(newTurns),
-        raw_ngrams:  CKL.generateKoreanNgrams(CKL.formatChunk(newTurns)),
-        created_at:  new Date().toISOString()
-      };
-
-      CKL.IndexedDBStore.saveChunk(chunk).then(function() {
-        // 저장 성공: 해시 + 저장 턴 수 업데이트
-        var update = {};
-        update[hashKey] = currentHash;
-        update['ckl_saved_turns_' + chatId] = turns.length;
-        chrome.storage.local.set(update);
-
-        console.log('[CKL] Saved chunk ' + chunk.chunk_id + ' (turns ' + turnStart + '-' + turnEnd + ')');
-
-        // 검색 인덱스 incremental update (비동기, 실패해도 저장은 유지)
-        CKL.getStorageMode().then(function(mode) {
-          var engine = mode === 'cloud' ? CKL.CloudSearch : CKL.LocalSearch;
-          return engine.add(chunk);
-        }).catch(function(e) { console.warn('[CKL] Search index add failed', e); });
-
-        CKL.isRunning = false;
-        CKL.updateStatus('저장됨 ✓');
-        setTimeout(function() { CKL.updateStatus(''); }, 3000);
-
-      }).catch(function(err) {
-        console.error('[CKL] Save failed', err);
-        CKL.isRunning = false;
-        CKL.updateStatus('저장 실패 ✗');
-      });
-    });
-  };
-
-  /**
-   * SNAP: 최근 N턴 raw text를 클립보드에 복사한다.
-   */
-  CKL.snapToClipboard = function() {
-    var turns  = CKL.extractTurns();
-    var recent = turns.slice(-CKL.CONFIG.SNAP_TURNS);
-    if (recent.length === 0) {
-      CKL.updateStatus('복사할 대화 없음');
-      return;
-    }
-    var text = CKL.formatChunk(recent);
-    navigator.clipboard.writeText(text).then(function() {
-      CKL.updateStatus('최근 ' + recent.length + '턴 복사됨! Cmd+V로 붙여넣기');
-      setTimeout(function() { CKL.updateStatus(''); }, 3000);
-    }).catch(function(err) {
-      console.error('[CKL] Clipboard write failed', err);
-      CKL.updateStatus('클립보드 복사 실패');
-    });
-  };
-  /**
-   * 전체 청크를 JSON 또는 Markdown 파일로 내보낸다.
-   * @param {'json'|'markdown'} format
-   */
-  CKL.exportData = function(format) {
-    CKL.IndexedDBStore.getAllChunks().then(function(chunks) {
-      if (chunks.length === 0) {
-        CKL.updateStatus('내보낼 데이터 없음');
-        return;
-      }
-      var content, filename, mime;
-      if (format === 'json') {
-        content  = JSON.stringify(chunks, null, 2);
-        filename = 'aikeep24-lite-export-' + _dateStamp() + '.json';
-        mime     = 'application/json';
-      } else {
-        // Markdown: 세션별 그룹핑
-        var bySession = {};
-        chunks.forEach(function(c) {
-          if (!bySession[c.session_id]) bySession[c.session_id] = [];
-          bySession[c.session_id].push(c);
-        });
-        var lines = ['# AIKeep24-Lite Export', '', '> Generated: ' + new Date().toISOString(), ''];
-        Object.keys(bySession).forEach(function(sid) {
-          var cs = bySession[sid].sort(function(a,b){ return a.turn_start - b.turn_start; });
-          var first = cs[0];
-          lines.push('## ' + (first.platform || 'unknown') + ' — ' + first.session_url);
-          lines.push('');
-          cs.forEach(function(c) {
-            lines.push('### Turns ' + c.turn_start + '–' + c.turn_end + '  (' + c.created_at.slice(0,10) + ')');
-            lines.push('');
-            lines.push(c.raw_content);
-            lines.push('');
-          });
-        });
-        content  = lines.join('
-');
-        filename = 'aikeep24-lite-export-' + _dateStamp() + '.md';
-        mime     = 'text/markdown';
-      }
-      _downloadFile(content, filename, mime);
-      CKL.updateStatus('내보내기 완료: ' + filename);
-      setTimeout(function() { CKL.updateStatus(''); }, 4000);
-    }).catch(function(err) {
-      CKL.updateStatus('내보내기 실패');
-      console.error('[CKL] Export error', err);
-    });
-  };
-
-  /** YYYY-MM-DD 형식 날짜 문자열 */
-  function _dateStamp() {
-    var d = new Date();
-    return d.getFullYear() + '-' +
-      String(d.getMonth() + 1).padStart(2, '0') + '-' +
-      String(d.getDate()).padStart(2, '0');
-  }
-
-  /** Blob 다운로드 트리거 */
-  function _downloadFile(content, filename, mime) {
-    var blob = new Blob([content], { type: mime });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 1000);
-  }
-
-  /**
-   * 상태 텍스트를 UI 배지에 표시한다.
-   * ui.js가 로드되기 전에 호출돼도 안전하도록 null 체크 포함.
-   * @param {string} msg
-   */
-  CKL.updateStatus = function(msg) {
-    var badge = document.getElementById('ckl-status');
-    if (badge) badge.textContent = msg;
-    if (msg) console.log('[CKL] Status: ' + msg);
-  };
-
-  /**
-   * 초기화: DOM body 준비 대기 후 UI 삽입 + Observer 시작
-   */
   function init() {
-    if (!document.body) {
-      setTimeout(init, 500);
-      return;
-    }
+    /* 원본과 동일: conversation 컨테이너 우선, 없으면 body */
+    var target = document.querySelector('.conversation-content')
+      || document.querySelector('.chat-wrapper')
+      || document.body;
+
+    CKL.observer.observe(target, { childList: true, subtree: true });
+
+    /* body 변경 시 UI 재삽입 (SPA 페이지 전환 대응) */
+    var bodyObserver = new MutationObserver(function() { CKL.ensureUI(); });
+    bodyObserver.observe(document.body, { childList: true });
 
     CKL.ensureUI();
 
-    // 검색 인덱스 초기화 (비동기, UI 차단 없음)
-    CKL.getStorageMode().then(function(mode) {
-      var engine = mode === 'cloud' ? CKL.CloudSearch : CKL.LocalSearch;
-      return engine.init();
-    }).then(function() {
-      console.log('[CKL] Search engine ready');
-    }).catch(function(err) {
-      console.warn('[CKL] Search engine init failed', err);
+    /* keepalive ping — 원본과 동일 */
+    setInterval(function() {
+      try { chrome.runtime.sendMessage({type: 'ping'}, function() { if (chrome.runtime.lastError) {} }); } catch(e) {}
+    }, 20000);
+
+    console.log('[CKL] AIKeep24-Lite v0.1.0 active');
+    CKL.checkForNewTurns();
+
+    /* 검색 인덱스 초기화 (비동기) */
+    CKL.LocalSearch.init().then(function() {
+      console.log('[CKL] Search index ready');
+    }).catch(function(e) {
+      console.warn('[CKL] Search index init failed', e);
     });
-
-    // MutationObserver 시작: body 전체 변경 감지
-    CKL.observer.observe(document.body, { childList: true, subtree: true });
-    console.log('[CKL] Observer started on ' + CKL.getPlatformKey());
-
-    // 초기 턴 수 기록 (burst 감지 기준점)
-    CKL.lastTurnCount = CKL.extractTurns().length;
-    console.log('[CKL] Initial turns: ' + CKL.lastTurnCount);
   }
 
-  init();
+  /* 원본과 동일: loadSettings 콜백으로 init 진입 */
+  function start() {
+    CKL.loadSettings(function() {
+      init();
+    });
+  }
 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
 })();

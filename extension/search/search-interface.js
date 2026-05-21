@@ -15,7 +15,7 @@
  * }
  */
 
-var CKL = window.CKL || {};
+var CKL = window.CKL;
 
 CKL.SearchInterface = {
   /**

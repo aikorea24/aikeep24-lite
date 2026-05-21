@@ -18,7 +18,7 @@
  * }
  */
 
-var CKL = window.CKL || {};
+var CKL = window.CKL;
 
 /**
  * 스토리지 인터페이스 — 구현체가 반드시 override해야 할 메서드 목록.

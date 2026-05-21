@@ -5,8 +5,7 @@
   "description": "AI 대화를 자동 저장하고 즉시 검색. LLM 불필요. 설치 즉시 작동.",
   "permissions": [
     "storage",
-    "clipboardWrite",
-    "downloads"
+    "clipboardWrite"
   ],
   "host_permissions": [
     "https://www.genspark.ai/*",
@@ -40,9 +39,6 @@
       "run_at": "document_idle"
     }
   ],
-  "action": {
-    "default_title": "AIKeep24-Lite"
-  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
