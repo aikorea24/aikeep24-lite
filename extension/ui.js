@@ -84,28 +84,23 @@
     btnSnap.innerText = 'SNAP';
     btnSnap.style.cssText = 'background:#fbbf24;color:#0f172a;' + btnStyle;
     btnSnap.onclick = function() {
-      var allTurns = CK.extractTurns();
-      if (allTurns.length < 2) {
-        CK.updateBadge('SNAP: Not enough turns');
-        setTimeout(function() { badge.style.display = 'none'; }, 3000);
+      var allTurns = CK.extractTurns ? CK.extractTurns() : [];
+      if (!allTurns || allTurns.length < 1) {
+        badge.innerText = 'SNAP: 대화 없음';
+        badge.style.display = 'block';
+        setTimeout(function(){ badge.style.display = 'none'; }, 3000);
         return;
       }
       var recentTurns = allTurns.slice(-10);
-      var rawText = recentTurns.map(function(t) {
-        return '[' + t.role.toUpperCase() + ']\n' + t.text;
-      }).join('\n\n');
-      var snapText = '[SNAP CONTEXT - Recent ' + recentTurns.length + ' turns]\n' + rawText + '\n\n위 맥락을 참고하여 이어서 작업해주세요.';
-      navigator.clipboard.writeText(snapText).then(function() {
-        CK.updateBadge('SNAP copied! (' + recentTurns.length + ' turns, ' + snapText.length + ' chars) Cmd+V');
-        setTimeout(function() { badge.style.display = 'none'; }, 5000);
-        // SNAP을 D1 checkpoint에도 저장 → INJ에서 최신 맥락으로 사용
-        var chatId = CK.getChatId();
-        if (chatId) {
-          CK.saveSnap({ session_id: chatId, snapshot: snapText }).then(function(r) {
-            if (r && r.ok) console.log('[CK] SNAP saved to D1 (' + snapText.length + ' chars)');
-            else console.log('[CK] SNAP save skipped (no session in D1)');
-          });
-        }
+      var snapText = '[SNAP - 최근 ' + recentTurns.length + '턴]\n' +
+        recentTurns.map(function(t){
+          return '[' + t.role.toUpperCase() + ']\n' + t.text;
+        }).join('\n\n') +
+        '\n\n위 맥락을 참고하여 이어서 작업해주세요.';
+      navigator.clipboard.writeText(snapText).then(function(){
+        badge.innerText = '✓ SNAP 복사됨 (' + recentTurns.length + '턴)';
+        badge.style.display = 'block';
+        setTimeout(function(){ badge.style.display = 'none'; }, 4000);
       });
     };
     btnBox.appendChild(btnSnap);
@@ -184,54 +179,13 @@
     });
   }
 
-  function tryProjectInject(mode) {
-    return CK.fetchProjects().then(function(pData) {
-      var projects = (pData.results || []).slice(0, 3);
-      if (projects.length === 0) {
-        CK.updateBadge('No context in D1. Run first.');
-        setTimeout(function() { document.getElementById('ck-badge').style.display = 'none'; }, 3000);
-        return null;
-      }
-      return CK.fetchLatestByProject(projects[0].project);
-    });
-  }
+  /* tryProjectInject: Phase 3에서 구현 */
 
-  function buildCtxFromSession(s) {
-    return {
-      summary: s.summary || '',
-      topics: CK.tryParseJSON(s.topics) || [],
-      key_decisions: CK.tryParseJSON(s.key_decisions) || [],
-      tools: CK.tryParseJSON(s.tools) || [],
-      project: s.project || '',
-      status: s.status || '',
-      checkpoint: s.checkpoint || '',
-      chunks: (s.chunks || []).map(function(c) {
-        return {
-          chunk_index: c.chunk_index,
-          chunk_summary: c.chunk_summary,
-          chunk_checkpoint: c.chunk_checkpoint,
-          decisions: CK.tryParseJSON(c.chunk_key_decisions) || [],
-          unresolved: [],
-          turn_start: c.turn_start,
-          turn_end: c.turn_end,
-          project: c.project || ''
-        };
-      }),
-      _fromD1: true
-    };
-  }
+  /* buildCtxFromSession: Phase 3에서 구현 */
 
-  function applyInject(ctx, mode) {
-    var text = CK.buildContext(ctx, mode);
-    return clipAndNotify(text, (mode === 'full' ? 'Full' : 'Light') + ' context (D1)', mode);
-  }
+  /* applyInject: Phase 3에서 구현 */
 
-  function clipAndNotify(text, label, mode) {
-    return navigator.clipboard.writeText(text).then(function() {
-      CK.updateBadge(label + ' copied! Cmd+V to paste.');
-      setTimeout(function() { document.getElementById('ck-badge').style.display = 'none'; }, 4000);
-    });
-  }
+  /* clipAndNotify: Phase 3에서 구현 */
 
   // === BRW 패널 로드 ===
   function loadBrowsePanel(browsePanel, badge) {

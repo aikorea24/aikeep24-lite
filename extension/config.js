@@ -4,6 +4,8 @@
 var CK = window.CK || {};
 
 CK.CONFIG = {
+  AUTORUN_IDLE_MS: 5 * 60 * 1000,
+  AUTOSAVE_IDLE_MS: 30 * 1000,
   TURNS_PER_CHUNK: 20,
   HASH_PREFIX_LEN: 100,
   SKIP_PATTERNS: ['/image/', '/draw/', '/art/'],

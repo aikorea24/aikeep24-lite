@@ -42,17 +42,17 @@
           sessionStore.createIndex('by_updated', 'updated_at', { unique: false });
         }
 
-        console.log('[CKL] IndexedDB schema created v' + DB_VERSION);
+        console.log('[CK] IndexedDB schema created v' + DB_VERSION);
       };
 
       req.onsuccess = function(e) {
         db = e.target.result;
-        console.log('[CKL] IndexedDB opened');
+        console.log('[CK] IndexedDB opened');
         resolve(db);
       };
 
       req.onerror = function(e) {
-        console.error('[CKL] IndexedDB open failed', e.target.error);
+        console.error('[CK] IndexedDB open failed', e.target.error);
         reject(e.target.error);
       };
     });

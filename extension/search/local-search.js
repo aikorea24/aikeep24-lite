@@ -57,7 +57,7 @@
 
       return CK.IndexedDBStore.getAllChunks().then(function(chunks) {
         if (chunks.length === 0) {
-          console.log('[CKL] LocalSearch: no chunks to index');
+          console.log('[CK] LocalSearch: no chunks to index');
           return;
         }
 
@@ -71,7 +71,7 @@
         // 전체 객체 캐시 (스니펫 생성에 사용)
         toIndex.forEach(function(c) { _chunkCache[c.chunk_id] = c; });
 
-        console.log('[CKL] LocalSearch: indexed ' + toIndex.length + ' chunks');
+        console.log('[CK] LocalSearch: indexed ' + toIndex.length + ' chunks');
       });
     },
 
@@ -133,7 +133,7 @@
         _chunkCache[chunk.chunk_id] = chunk;
       } catch(e) {
         // 이미 인덱싱된 chunk_id면 무시
-        console.warn('[CKL] LocalSearch.add skipped (duplicate?):', e.message);
+        console.warn('[CK] LocalSearch.add skipped (duplicate?):', e.message);
       }
       return Promise.resolve();
     }

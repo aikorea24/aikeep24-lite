@@ -11,13 +11,13 @@
 
   CK.CloudSearch = {
     init: function() {
-      console.log('[CKL] CloudSearch: Mode B not yet implemented (Phase 3)');
+      console.log('[CK] CloudSearch: Mode B not yet implemented (Phase 3)');
       return Promise.resolve();
     },
 
     search: function(query, opts) {
       // TODO Phase 3: fetch(CK.CONFIG.WORKER_URL + '/search/fts', ...)
-      console.warn('[CKL] CloudSearch.search not implemented');
+      console.warn('[CK] CloudSearch.search not implemented');
       return Promise.resolve([]);
     },
 
