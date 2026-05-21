@@ -1,0 +1,30 @@
+/**
+ * AIKeep24-Lite - 클라우드 검색 (Mode B 스텁)
+ *
+ * Phase 3에서 구현. 현재는 인터페이스 정의만.
+ * Worker의 /search/fts 엔드포인트를 호출한다.
+ */
+(function() {
+  'use strict';
+
+  var CKL = window.CKL;
+
+  CKL.CloudSearch = {
+    init: function() {
+      console.log('[CKL] CloudSearch: Mode B not yet implemented (Phase 3)');
+      return Promise.resolve();
+    },
+
+    search: function(query, opts) {
+      // TODO Phase 3: fetch(CKL.CONFIG.WORKER_URL + '/search/fts', ...)
+      console.warn('[CKL] CloudSearch.search not implemented');
+      return Promise.resolve([]);
+    },
+
+    add: function(chunk) {
+      // TODO Phase 3: fetch(CKL.CONFIG.WORKER_URL + '/ingest', ...)
+      return Promise.resolve();
+    }
+  };
+
+})();

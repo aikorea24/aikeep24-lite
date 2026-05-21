@@ -28,6 +28,10 @@
         "ngram.js",
         "storage/storage-interface.js",
         "storage/indexeddb-store.js",
+        "search/search-interface.js",
+        "vendor/minisearch.umd.js",
+        "search/local-search.js",
+        "search/cloud-search.js",
         "observer.js",
         "ui.js",
         "content.js"

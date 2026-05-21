@@ -77,6 +77,13 @@
         chrome.storage.local.set(update);
 
         console.log('[CKL] Saved chunk ' + chunk.chunk_id + ' (turns ' + turnStart + '-' + turnEnd + ')');
+
+        // 검색 인덱스 incremental update (비동기, 실패해도 저장은 유지)
+        CKL.getStorageMode().then(function(mode) {
+          var engine = mode === 'cloud' ? CKL.CloudSearch : CKL.LocalSearch;
+          return engine.add(chunk);
+        }).catch(function(e) { console.warn('[CKL] Search index add failed', e); });
+
         CKL.isRunning = false;
         CKL.updateStatus('저장됨 ✓');
         setTimeout(function() { CKL.updateStatus(''); }, 3000);
@@ -130,6 +137,16 @@
     }
 
     CKL.ensureUI();
+
+    // 검색 인덱스 초기화 (비동기, UI 차단 없음)
+    CKL.getStorageMode().then(function(mode) {
+      var engine = mode === 'cloud' ? CKL.CloudSearch : CKL.LocalSearch;
+      return engine.init();
+    }).then(function() {
+      console.log('[CKL] Search engine ready');
+    }).catch(function(err) {
+      console.warn('[CKL] Search engine init failed', err);
+    });
 
     // MutationObserver 시작: body 전체 변경 감지
     CKL.observer.observe(document.body, { childList: true, subtree: true });
