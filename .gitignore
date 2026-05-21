@@ -1,0 +1,35 @@
+# Node
+node_modules/
+.npm/
+package-lock.json
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
+dist/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets / Keys
+.env
+.env.local
+secrets.json
+
+# Python (스크립트 도구용)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Build output
+build/
+out/

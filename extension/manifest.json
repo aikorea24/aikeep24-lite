@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "AIKeep24-Lite",
+  "version": "0.1.0",
+  "description": "AI 대화를 자동 저장하고 즉시 검색. LLM 불필요. 설치 즉시 작동.",
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://www.genspark.ai/*",
+    "https://chatgpt.com/*",
+    "https://claude.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.genspark.ai/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "config.js",
+        "dom-parser.js",
+        "ngram.js",
+        "observer.js",
+        "ui.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "AIKeep24-Lite",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
