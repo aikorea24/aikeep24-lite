@@ -34,9 +34,21 @@
       _toggleSearchPanel();
     });
 
+    var exportBtn = _btn('⬇', '#2a2a1a', '#ffd166', function() {
+      _showExportMenu(exportBtn);
+    });
+    exportBtn.title = '대화 내보내기 (JSON / Markdown)';
+
+    var countBadge = _el('span', { id: 'ckl-count', title: '저장된 청크 수' });
+    countBadge.style.cssText = 'color:#555;font-size:10px;min-width:24px;text-align:center';
+
     var status = _el('span', { id: 'ckl-status' });
 
-    [label, saveBtn, snapBtn, searchBtn, status].forEach(function(n) { bar.appendChild(n); });
+    [label, saveBtn, snapBtn, searchBtn, exportBtn, countBadge, status].forEach(function(n) { bar.appendChild(n); });
+
+    // 청크 카운트 초기화 + 주기적 갱신 (30초)
+    _refreshCount();
+    setInterval(_refreshCount, 30000);
     document.body.appendChild(bar);
 
     /* 검색 패널 */
@@ -277,7 +289,8 @@
         'overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ckl-url:hover{text-decoration:underline}',
       '.ckl-loading{color:#888;padding:20px;text-align:center}',
-      '.ckl-no-result{color:#666;padding:20px;text-align:center;font-size:12px}'
+      '.ckl-no-result{color:#666;padding:20px;text-align:center;font-size:12px}',
+      '#ckl-export-menu div:hover{background:#2a2a40}'
     ].join('');
     document.head.appendChild(s);
   }

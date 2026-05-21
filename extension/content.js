@@ -115,6 +115,78 @@
       CKL.updateStatus('클립보드 복사 실패');
     });
   };
+  /**
+   * 전체 청크를 JSON 또는 Markdown 파일로 내보낸다.
+   * @param {'json'|'markdown'} format
+   */
+  CKL.exportData = function(format) {
+    CKL.IndexedDBStore.getAllChunks().then(function(chunks) {
+      if (chunks.length === 0) {
+        CKL.updateStatus('내보낼 데이터 없음');
+        return;
+      }
+      var content, filename, mime;
+      if (format === 'json') {
+        content  = JSON.stringify(chunks, null, 2);
+        filename = 'aikeep24-lite-export-' + _dateStamp() + '.json';
+        mime     = 'application/json';
+      } else {
+        // Markdown: 세션별 그룹핑
+        var bySession = {};
+        chunks.forEach(function(c) {
+          if (!bySession[c.session_id]) bySession[c.session_id] = [];
+          bySession[c.session_id].push(c);
+        });
+        var lines = ['# AIKeep24-Lite Export', '', '> Generated: ' + new Date().toISOString(), ''];
+        Object.keys(bySession).forEach(function(sid) {
+          var cs = bySession[sid].sort(function(a,b){ return a.turn_start - b.turn_start; });
+          var first = cs[0];
+          lines.push('## ' + (first.platform || 'unknown') + ' — ' + first.session_url);
+          lines.push('');
+          cs.forEach(function(c) {
+            lines.push('### Turns ' + c.turn_start + '–' + c.turn_end + '  (' + c.created_at.slice(0,10) + ')');
+            lines.push('');
+            lines.push(c.raw_content);
+            lines.push('');
+          });
+        });
+        content  = lines.join('
+');
+        filename = 'aikeep24-lite-export-' + _dateStamp() + '.md';
+        mime     = 'text/markdown';
+      }
+      _downloadFile(content, filename, mime);
+      CKL.updateStatus('내보내기 완료: ' + filename);
+      setTimeout(function() { CKL.updateStatus(''); }, 4000);
+    }).catch(function(err) {
+      CKL.updateStatus('내보내기 실패');
+      console.error('[CKL] Export error', err);
+    });
+  };
+
+  /** YYYY-MM-DD 형식 날짜 문자열 */
+  function _dateStamp() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  /** Blob 다운로드 트리거 */
+  function _downloadFile(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
 
   /**
    * 상태 텍스트를 UI 배지에 표시한다.
