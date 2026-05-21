@@ -26,6 +26,8 @@
         "config.js",
         "dom-parser.js",
         "ngram.js",
+        "storage/storage-interface.js",
+        "storage/indexeddb-store.js",
         "observer.js",
         "ui.js",
         "content.js"
@@ -34,8 +36,7 @@
     }
   ],
   "action": {
-    "default_title": "AIKeep24-Lite",
-    "default_popup": "popup.html"
+    "default_title": "AIKeep24-Lite"
   },
   "icons": {
     "16": "icons/icon16.png",
