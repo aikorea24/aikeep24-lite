@@ -10,7 +10,7 @@
 (function() {
   'use strict';
 
-  var CKL = window.CKL;
+  var CK = window.CK;
   var DB_NAME = 'aikeep24lite';
   var DB_VERSION = 1;
   var db = null; // 싱글턴 IDBDatabase 인스턴스
@@ -63,7 +63,7 @@
    * @param {Object} chunk - StorageInterface 스키마 참고
    * @returns {Promise<void>}
    */
-  CKL.IndexedDBStore = {
+  CK.IndexedDBStore = {
     saveChunk: function(chunk) {
       return openDB().then(function(database) {
         return new Promise(function(resolve, reject) {

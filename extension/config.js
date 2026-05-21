@@ -1,18 +1,13 @@
 /**
- * AIKeep24-Lite Extension - 공통 설정
- * 원본 AIKeep24 config.js 기반 포팅. LLM 설정 제거.
+ * AIKeep24 Extension - 공통 설정
  */
+var CK = window.CK || {};
 
-/* 원본과 동일: IIFE 없이 최상위 선언 */
-var CKL = window.CKL || {};
-
-CKL.CONFIG = {
+CK.CONFIG = {
   TURNS_PER_CHUNK: 20,
-  WORKER_URL: '',
-  AUTOSAVE_IDLE_MS: 60000,
   HASH_PREFIX_LEN: 100,
-  SNAP_TURNS: 10,
   SKIP_PATTERNS: ['/image/', '/draw/', '/art/'],
+  KNOWN_PROJECTS: ['AIKeep24', 'TV-show', 'TAP', 'aikorea24', 'news-keyword-pro', 'KDE-keepalive'],
   PLATFORMS: {
     genspark: {
       hostMatch: 'genspark.ai',
@@ -35,14 +30,14 @@ CKL.CONFIG = {
   }
 };
 
-CKL.enabled = true;
-CKL.isRunning = false;
-CKL.lastTurnCount = 0;
-CKL.lastNewTurnTime = 0;
-CKL.autoSaveTimer = null;
-CKL.autoSaveTriggered = false;
+CK.enabled = true;
+CK.isRunning = false;
+CK.lastTurnCount = 0;
+CK.lastNewTurnTime = 0;
+CK.autoRunTimer = null;
+CK.autoRunTriggered = false;
 
-CKL.hashText = function(text) {
+CK.hashText = function(text) {
   var hash = 0x811c9dc5;
   for (var i = 0; i < text.length; i++) {
     hash ^= text.charCodeAt(i);
@@ -51,26 +46,28 @@ CKL.hashText = function(text) {
   return hash.toString(16);
 };
 
-CKL.tryParseJSON = function(str) {
+CK.tryParseJSON = function(str) {
   try { return JSON.parse(str); } catch(e) { return []; }
 };
 
-CKL.generateUUID = function() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-};
-
-/* 원본과 동일: loadSettings 패턴 유지 (Mode A/B 토글용) */
-CKL.loadSettings = function(callback) {
-  chrome.storage.local.get(['ckl_storage_mode', 'ckl_worker_url'], function(data) {
-    if (data.ckl_worker_url) CKL.CONFIG.WORKER_URL = data.ckl_worker_url;
-    CKL.CONFIG.STORAGE_MODE = data.ckl_storage_mode || 'local';
-    console.log('[CKL] Settings loaded: mode=' + CKL.CONFIG.STORAGE_MODE);
+CK.loadSettings = function(callback) {
+  var keys = [
+    'ck_backend',
+    'ck_ollama_model', 'ck_ollama_url', 'ck_worker_url',
+    'ck_optiq_url', 'ck_optiq_model',
+    'ck_neurons_url', 'ck_neurons_model',
+    'ck_num_ctx', 'ck_num_predict', 'ck_temperature',
+    'ck_turns_per_chunk', 'ck_max_text_len', 'ck_thinking'
+  ];
+  chrome.storage.local.get(keys, function(data) {
+    if (data.ck_ollama_url) {
+      CK.CONFIG.OLLAMA_TAGS_URL = data.ck_ollama_url + '/api/tags';
+    }
+    if (data.ck_turns_per_chunk) CK.CONFIG.TURNS_PER_CHUNK = parseInt(data.ck_turns_per_chunk);
+    if (data.ck_max_text_len) CK.CONFIG.MAX_TEXT_LEN = parseInt(data.ck_max_text_len);
+    CK.CONFIG.THINKING = data.ck_thinking === 'true';
     if (callback) callback();
   });
 };
 
-window.CKL = CKL;
+window.CK = CK;

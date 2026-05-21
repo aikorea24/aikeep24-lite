@@ -7,22 +7,22 @@
 (function() {
   'use strict';
 
-  var CKL = window.CKL;
+  var CK = window.CK;
 
-  CKL.CloudSearch = {
+  CK.CloudSearch = {
     init: function() {
       console.log('[CKL] CloudSearch: Mode B not yet implemented (Phase 3)');
       return Promise.resolve();
     },
 
     search: function(query, opts) {
-      // TODO Phase 3: fetch(CKL.CONFIG.WORKER_URL + '/search/fts', ...)
+      // TODO Phase 3: fetch(CK.CONFIG.WORKER_URL + '/search/fts', ...)
       console.warn('[CKL] CloudSearch.search not implemented');
       return Promise.resolve([]);
     },
 
     add: function(chunk) {
-      // TODO Phase 3: fetch(CKL.CONFIG.WORKER_URL + '/ingest', ...)
+      // TODO Phase 3: fetch(CK.CONFIG.WORKER_URL + '/ingest', ...)
       return Promise.resolve();
     }
   };

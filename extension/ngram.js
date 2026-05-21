@@ -7,7 +7,7 @@
 (function() {
   'use strict';
 
-  var CKL = window.CKL;
+  var CK = window.CK;
 
   /**
    * 한글 어절에서 bigram + trigram을 생성한다.
@@ -17,7 +17,7 @@
    * @param {string} text - 원본 텍스트 (한글 포함 혼합 가능)
    * @returns {string} 공백 구분 n-gram 토큰 문자열
    */
-  CKL.generateKoreanNgrams = function(text) {
+  CK.generateKoreanNgrams = function(text) {
     var korean = text.match(/[가-힣]+/g) || [];
     var ngrams = [];
 
@@ -34,7 +34,7 @@
       }
     }
 
-    return ngrams.join(' ');
+    return ngrams;
   };
 
   /**
@@ -44,8 +44,8 @@
    * @param {string} query - 사용자 검색어
    * @returns {string} n-gram 확장 쿼리 문자열
    */
-  CKL.expandQueryNgrams = function(query) {
-    var ngramPart = CKL.generateKoreanNgrams(query);
+  CK.expandQueryNgrams = function(query) {
+    var ngramPart = CK.generateKoreanNgrams(query);
     // 원본 쿼리 토큰 + n-gram 토큰을 합쳐서 반환
     // FTS5/minisearch 양쪽에서 OR 매칭 가능하도록 공백 구분
     var parts = [query.trim()];
@@ -60,7 +60,7 @@
    * @param {string} text
    * @returns {number}
    */
-  CKL.koreanRatio = function(text) {
+  CK.koreanRatio = function(text) {
     if (!text || text.length === 0) return 0;
     var koreanChars = (text.match(/[가-힣]/g) || []).length;
     return koreanChars / text.length;

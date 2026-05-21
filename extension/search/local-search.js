@@ -6,7 +6,7 @@
  *
  * 인덱스 필드:
  *   - raw_content  : 원본 대화 텍스트
- *   - raw_ngrams   : 한국어 bigram+trigram (CKL.generateKoreanNgrams)
+ *   - raw_ngrams   : 한국어 bigram+trigram (CK.generateKoreanNgrams)
  *   - platform, session_url, created_at : 메타 (검색 대상 제외, 필터용)
  *
  * 스니펫 추출:
@@ -16,7 +16,7 @@
 (function() {
   'use strict';
 
-  var CKL = window.CKL;
+  var CK = window.CK;
 
   /** @type {MiniSearch|null} 싱글턴 인스턴스 */
   var _index = null;
@@ -50,12 +50,12 @@
    * 확장 시작 시 1회 호출. 10,000청크 상한(v0.1.0).
    * @returns {Promise<void>}
    */
-  CKL.LocalSearch = {
+  CK.LocalSearch = {
     init: function() {
       _index = createIndex();
       _chunkCache = {};
 
-      return CKL.IndexedDBStore.getAllChunks().then(function(chunks) {
+      return CK.IndexedDBStore.getAllChunks().then(function(chunks) {
         if (chunks.length === 0) {
           console.log('[CKL] LocalSearch: no chunks to index');
           return;
@@ -86,7 +86,7 @@
       opts = opts || {};
 
       // 한국어 포함 시 n-gram 확장 쿼리 사용
-      var expandedQuery = CKL.expandQueryNgrams(query);
+      var expandedQuery = CK.expandQueryNgrams(query);
 
       var raw = _index.search(expandedQuery, {
         boost:       { raw_content: 2, raw_ngrams: 1 },

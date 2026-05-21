@@ -2,12 +2,14 @@
   "manifest_version": 3,
   "name": "AIKeep24-Lite",
   "version": "0.1.0",
-  "description": "AI 대화를 자동 저장하고 즉시 검색. LLM 불필요. 설치 즉시 작동.",
+  "description": "AI 대화 자동 저장 + 전문검색. LLM 불필요.",
   "permissions": [
     "storage",
     "clipboardWrite"
   ],
   "host_permissions": [
+    "http://localhost:11434/*",
+    "http://localhost:8080/*",
     "https://www.genspark.ai/*",
     "https://chatgpt.com/*",
     "https://claude.ai/*"
@@ -32,8 +34,8 @@
         "vendor/minisearch.umd.js",
         "search/local-search.js",
         "search/cloud-search.js",
-        "observer.js",
         "ui.js",
+        "observer.js",
         "content.js"
       ],
       "run_at": "document_idle"

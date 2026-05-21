@@ -2,30 +2,30 @@
  * AIKeep24 - DOM 파서 (Genspark 대화 추출)
  */
 (function() {
-  var CKL = window.CKL;
+  var CK = window.CK;
 
   /**
    * 현재 URL에서 플랫폼을 자동 감지한다.
    */
-  CKL.detectPlatform = function() {
+  CK.detectPlatform = function() {
     var host = window.location.hostname;
-    var platforms = CKL.CONFIG.PLATFORMS;
+    var platforms = CK.CONFIG.PLATFORMS;
     for (var key in platforms) {
       if (host.indexOf(platforms[key].hostMatch) > -1) return platforms[key];
     }
     return platforms.genspark; // fallback
   };
 
-  CKL.getPlatformKey = function() {
+  CK.getPlatformKey = function() {
     var host = window.location.hostname;
-    var platforms = CKL.CONFIG.PLATFORMS;
+    var platforms = CK.CONFIG.PLATFORMS;
     for (var key in platforms) {
       if (host.indexOf(platforms[key].hostMatch) > -1) return key;
     }
     return 'genspark';
   };
 
-  CKL.getChatId = function() {
+  CK.getChatId = function() {
     var path = window.location.pathname;
     // Claude: /chat/uuid
     var claudeMatch = path.match(/\/chat\/([a-f0-9-]+)/);
@@ -42,8 +42,8 @@
     return path.replace(/\//g, '_');
   };
 
-  CKL.extractTurns = function() {
-    var platform = CKL.detectPlatform();
+  CK.extractTurns = function() {
+    var platform = CK.detectPlatform();
 
     // Claude: turnSelector가 없으므로 부모 컨테이너 구조로 추출
     if (!platform.turnSelector) {
@@ -82,7 +82,7 @@
     return result;
   };
 
-  CKL.formatChunk = function(turnList) {
+  CK.formatChunk = function(turnList) {
     return turnList.map(function(t) {
       var label = t.role === 'user' ? 'USER' : 'ASSISTANT';
       return '[' + label + ']\n' + t.text;
@@ -92,23 +92,23 @@
   /**
    * 해시 기반 변경 감지: 마지막 턴 텍스트의 앞 N자를 해시
    */
-  CKL.computeTurnHash = function(turns) {
+  CK.computeTurnHash = function(turns) {
     if (!turns || turns.length === 0) return '';
     var lastText = turns[turns.length - 1].text || '';
-    var prefix = lastText.substring(0, CKL.CONFIG.HASH_PREFIX_LEN);
-    return CKL.hashText(prefix);
+    var prefix = lastText.substring(0, CK.CONFIG.HASH_PREFIX_LEN);
+    return CK.hashText(prefix);
   };
 
   /**
    * 대화 유형 필터링: 요약 불필요한 대화인지 판단
    */
-  CKL.shouldSkipConversation = function() {
+  CK.shouldSkipConversation = function() {
     var url = window.location.href;
-    var patterns = CKL.CONFIG.SKIP_PATTERNS;
+    var patterns = CK.CONFIG.SKIP_PATTERNS;
     for (var i = 0; i < patterns.length; i++) {
       if (url.indexOf(patterns[i]) > -1) return true;
     }
-    var platform = CKL.detectPlatform();
+    var platform = CK.detectPlatform();
     if (platform.skipSelectors) {
       var imgEls = document.querySelectorAll(platform.skipSelectors);
       var turnEls = platform.turnSelector ? document.querySelectorAll(platform.turnSelector) : [];
