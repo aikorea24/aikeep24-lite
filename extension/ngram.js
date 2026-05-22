@@ -19,6 +19,7 @@
    */
   CK.generateKoreanNgrams = function(text) {
     var korean = text.match(/[가-힣]+/g) || [];
+    var english = text.toLowerCase().match(/[a-z]{2,}/g) || [];
     var ngrams = [];
 
     for (var w = 0; w < korean.length; w++) {
@@ -34,6 +35,7 @@
       }
     }
 
+    english.forEach(function(w) { ngrams.push(w); });
     return ngrams;
   };
 
