@@ -99,7 +99,7 @@
     CK._loadBrowseSessions(bp);
   };
 
-  /** 세션 브라우저 내부: IndexedDB에서 세션 목록 로드 */
+  /** 세션 브라우저 내부: IndexedDB에서 세션 목록 로드 (핀 기능 포함) */
   CK._loadBrowseSessions = function(panel) {
     var listEl = document.getElementById('ck-brw-list');
     if (!listEl) return;
@@ -107,65 +107,99 @@
 
     var filterPlatform = (document.getElementById('ck-brw-filter') || {}).value || '';
 
-    CK.IndexedDBStore.getAllChunks().then(function(chunks) {
-      // 세션 단위로 그룹화 (chunk_id 하나 = session 하나 in Lite)
-      var sessions = chunks
-        .filter(function(c) { return !filterPlatform || c.platform === filterPlatform; })
-        .sort(function(a, b) { return a.created_at > b.created_at ? -1 : 1; });
+    chrome.storage.local.get(['ck_pinned'], function(data) {
+      var pinned = data.ck_pinned || [];
 
-      if (sessions.length === 0) {
-        listEl.innerHTML = '<div style="color:#666;padding:6px;font-size:11px;">저장된 세션 없음</div>';
-        return;
-      }
+      CK.IndexedDBStore.getAllChunks().then(function(chunks) {
+        var sessions = chunks
+          .filter(function(c) { return !filterPlatform || c.platform === filterPlatform; })
+          .sort(function(a, b) { return a.created_at > b.created_at ? -1 : 1; });
 
-      // 날짜 구간 그룹화
-      var now = new Date();
-      var groups = { pinned: [], week: [], month: [], older: [] };
-      sessions.forEach(function(s) {
-        var d = new Date(s.created_at);
-        var diff = (now - d) / 86400000;
-        if (diff <= 7)       groups.week.push(s);
-        else if (diff <= 30) groups.month.push(s);
-        else                 groups.older.push(s);
-      });
+        if (sessions.length === 0) {
+          listEl.innerHTML = '<div style="color:#666;padding:6px;font-size:11px;">저장된 세션 없음</div>';
+          return;
+        }
 
-      var platIcon = { chatgpt: '🤖', claude: '🟠', genspark: '🟢' };
-      function renderGroup(label, items) {
-        if (!items.length) return '';
-        var html = '<div style="font-size:10px;color:#475569;padding:4px 6px 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">' + label + '</div>';
-        items.forEach(function(s) {
-          var icon = platIcon[s.platform] || '💬';
-          var title = (s.raw_content || '').replace(/
-/g, ' ').trim().slice(0, 45) || s.session_id.slice(0, 12);
-          var date = (s.created_at || '').slice(0, 10);
-          html += '<div class="ck-brw-item" data-url="' + (s.session_url || '#') + '" ' +
-            'style="padding:6px 8px;border-bottom:1px solid #1e2a3a;cursor:pointer;border-radius:4px;">' +
-            '<div style="font-size:10px;color:#67e8f9;">' + icon + ' ' + (s.platform || '') + ' · ' + date + '</div>' +
-            '<div style="font-size:11px;color:#e2e8f0;margin-top:2px;line-height:1.4;">' +
-              title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
-            '</div>' +
-          '</div>';
+        var now = new Date();
+        var groups = { pinned: [], week: [], month: [], older: [] };
+        sessions.forEach(function(s) {
+          if (pinned.indexOf(s.chunk_id) > -1) { groups.pinned.push(s); return; }
+          var diff = (now - new Date(s.created_at)) / 86400000;
+          if (diff <= 7)       groups.week.push(s);
+          else if (diff <= 30) groups.month.push(s);
+          else                 groups.older.push(s);
         });
-        return html;
-      }
 
-      listEl.innerHTML =
-        renderGroup('📅 이번 주', groups.week) +
-        renderGroup('📅 이번 달', groups.month) +
-        renderGroup('📅 이전', groups.older);
+        var platIcon = { chatgpt: '\u{1F916}', claude: '\u{1F7E0}', genspark: '\u{1F7E2}' };
 
-      listEl.querySelectorAll('.ck-brw-item').forEach(function(el) {
-        el.addEventListener('click', function() {
-          var url = el.getAttribute('data-url');
-          if (url && url !== '#') window.open(url, '_blank');
+        function renderGroup(label, items) {
+          if (!items.length) return '';
+          var html = '<div style="font-size:10px;color:#475569;padding:4px 6px 2px;font-weight:700;' +
+            'text-transform:uppercase;letter-spacing:0.5px;">' + label + '</div>';
+          items.forEach(function(s) {
+            var isPinned = pinned.indexOf(s.chunk_id) > -1;
+            var icon  = platIcon[s.platform] || '\u{1F4AC}';
+            var title = (s.raw_content || '').replace(/[\n\r]+/g, ' ').trim().slice(0, 45)
+                        || s.session_id.slice(0, 12);
+            var date  = (s.created_at || '').slice(0, 10);
+            var safeTitle = title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            html += '<div class="ck-brw-item" data-cid="' + s.chunk_id + '" ' +
+              'data-url="' + (s.session_url || '#') + '" ' +
+              'style="padding:6px 8px;border-bottom:1px solid #1e2a3a;cursor:pointer;' +
+              'border-radius:4px;display:flex;justify-content:space-between;align-items:flex-start;">' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:10px;color:#67e8f9;">' + icon + ' ' + (s.platform||'') + ' \u00b7 ' + date + '</div>' +
+                '<div style="font-size:11px;color:#e2e8f0;margin-top:2px;line-height:1.4;' +
+                  'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + safeTitle + '</div>' +
+              '</div>' +
+              '<button class="ck-pin-btn" data-cid="' + s.chunk_id + '" ' +
+                'style="background:none;border:none;cursor:pointer;font-size:13px;' +
+                'padding:0 0 0 6px;color:' + (isPinned ? '#ffd166' : '#475569') + ';flex-shrink:0;line-height:1;">' +
+                (isPinned ? '\u{1F4CC}' : '\u{1F4CD}') +
+              '</button>' +
+            '</div>';
+          });
+          return html;
+        }
+
+        listEl.innerHTML =
+          renderGroup('\u{1F4CC} \uace0\uc815\ub428', groups.pinned) +
+          renderGroup('\u{1F4C5} \uc774\ubc88 \uc8fc', groups.week) +
+          renderGroup('\u{1F4C5} \uc774\ubc88 \ub2ec', groups.month) +
+          renderGroup('\u{1F4C5} \uc774\uc804', groups.older);
+
+        listEl.querySelectorAll('.ck-brw-item').forEach(function(el) {
+          el.addEventListener('click', function(e) {
+            if (e.target.classList.contains('ck-pin-btn')) return;
+            var url = el.getAttribute('data-url');
+            if (url && url !== '#') window.open(url, '_blank');
+          });
+          el.addEventListener('mouseenter', function() { el.style.background = 'rgba(103,232,249,0.08)'; });
+          el.addEventListener('mouseleave', function() { el.style.background = ''; });
         });
-        el.addEventListener('mouseenter', function() { el.style.background = 'rgba(103,232,249,0.08)'; });
-        el.addEventListener('mouseleave', function() { el.style.background = ''; });
+
+        listEl.querySelectorAll('.ck-pin-btn').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var cid = btn.getAttribute('data-cid');
+            chrome.storage.local.get(['ck_pinned'], function(d) {
+              var pins = d.ck_pinned || [];
+              var idx  = pins.indexOf(cid);
+              if (idx > -1) pins.splice(idx, 1);
+              else          pins.unshift(cid);
+              chrome.storage.local.set({ ck_pinned: pins }, function() {
+                CK._loadBrowseSessions(panel);
+              });
+            });
+          });
+        });
+
+      }).catch(function(e) {
+        listEl.innerHTML = '<div style="color:#f87171;padding:6px;font-size:11px;">\uc624\ub958: ' + e.message + '</div>';
       });
-    }).catch(function(e) {
-      listEl.innerHTML = '<div style="color:#f87171;padding:6px;font-size:11px;">오류: ' + e.message + '</div>';
     });
   };
+
 
 
   CK.lastSavedHash = null;
@@ -280,11 +314,22 @@
 
     CK.ensureUI();
 
-    // 검색 엔진 초기화 + 기존 청크 인덱스 로드
-    if (CK.LocalSearch && CK.IndexedDBStore) {
+    // 검색 엔진 초기화: API_KEY 있으면 CloudSearch(Mode B), 없으면 LocalSearch(Mode A)
+    if (CK.CONFIG.API_KEY && CK.CloudSearch) {
+      CK.CloudSearch.init().then(function() {
+        window._ckEngine = CK.CloudSearch;
+        console.log('[CK] 검색 엔진: CloudSearch (Mode B)');
+      });
+      // LocalSearch도 병렬 초기화 (fallback용)
+      if (CK.LocalSearch && CK.IndexedDBStore) {
+        CK.LocalSearch.init().catch(function(e) {
+          console.warn('[CK] LocalSearch 초기화 실패:', e);
+        });
+      }
+    } else if (CK.LocalSearch && CK.IndexedDBStore) {
       CK.LocalSearch.init().then(function() {
         window._ckEngine = CK.LocalSearch;
-        console.log('[CK] 검색 인덱스 초기화 완료');
+        console.log('[CK] 검색 엔진: LocalSearch (Mode A)');
       }).catch(function(e) {
         console.error('[CK] 검색 인덱스 초기화 실패', e);
       });

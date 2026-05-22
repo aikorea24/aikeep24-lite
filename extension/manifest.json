@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AIKeep24-Lite",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "AI 대화 자동 저장 + 전문검색. LLM 불필요.",
   "permissions": [
     "storage",
@@ -13,7 +13,8 @@
     "https://www.genspark.ai/*",
     "https://genspark.ai/*",
     "https://chatgpt.com/*",
-    "https://claude.ai/*"
+    "https://claude.ai/*",
+    "https://aikeep24lite-worker.hugh79757.workers.dev/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -47,5 +48,6 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "options_page": "options.html"
 }

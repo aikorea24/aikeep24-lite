@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>AIKeep24-Lite 설정</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+         background: #0f172a; color: #e2e8f0; margin: 0; padding: 24px; min-width: 400px; }
+  h2   { font-size: 16px; color: #67e8f9; margin: 0 0 20px; }
+  .section { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+             border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .section h3 { font-size: 12px; color: #94a3b8; margin: 0 0 12px;
+                text-transform: uppercase; letter-spacing: 0.5px; }
+  label  { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+  input  { width: 100%; padding: 8px 10px; background: #1e2a3a; border: 1px solid #334155;
+           border-radius: 6px; color: #e2e8f0; font-size: 13px; box-sizing: border-box; }
+  input:focus { outline: none; border-color: #67e8f9; }
+  .row   { margin-bottom: 12px; }
+  .btn   { padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer;
+           font-size: 13px; font-weight: 600; }
+  .btn-save  { background: #34d399; color: #0f172a; }
+  .btn-reg   { background: #a78bfa; color: #0f172a; margin-left: 8px; }
+  .btn-reset { background: #475569; color: #e2e8f0; margin-left: 8px; }
+  .status { font-size: 12px; margin-top: 10px; min-height: 18px; }
+  .ok  { color: #34d399; }
+  .err { color: #f87171; }
+  .tag { display: inline-block; background: #1e3a5f; color: #67e8f9;
+         font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<h2>⚙️ AIKeep24-Lite 설정</h2>
+
+<div class="section">
+  <h3>Mode B — 클라우드 동기화 <span class="tag">선택사항</span></h3>
+  <div class="row">
+    <label>Worker URL</label>
+    <input id="worker_url" type="text" placeholder="https://your-worker.workers.dev">
+  </div>
+  <div class="row">
+    <label>API Key</label>
+    <input id="api_key" type="text" placeholder="ck_xxxxxxxxxxxx">
+  </div>
+  <div class="row">
+    <label>이메일로 API Key 발급</label>
+    <input id="reg_email" type="email" placeholder="your@email.com">
+  </div>
+  <button class="btn btn-save" id="btn-save">저장</button>
+  <button class="btn btn-reg"  id="btn-register">API Key 발급</button>
+  <button class="btn btn-reset" id="btn-reset">초기화</button>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="section">
+  <h3>Mode A — 로컬 저장 <span class="tag">기본</span></h3>
+  <p style="font-size:12px;color:#64748b;margin:0;">
+    별도 설정 없이 IndexedDB에 자동 저장됩니다.<br>
+    API Key 없이도 SAVE/SEARCH/BRW 모두 작동합니다.
+  </p>
+</div>
+
+<div class="section">
+  <h3>현재 상태</h3>
+  <div id="current-status" style="font-size:12px;color:#64748b;">불러오는 중...</div>
+</div>
+
+<script src="options.js"></script>
+</body>
+</html>
