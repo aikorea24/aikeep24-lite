@@ -108,13 +108,16 @@
       var limit   = opts.limit || 20;
       var results = filtered.slice(0, limit).map(function(r) {
         var chunk = _chunkCache[r.id] || {};
+        // MiniSearch storeFields에 raw_content가 포함되므로 cache miss 시 r에서 fallback
+        var rawContent = chunk.raw_content || r.raw_content || '';
         return {
           chunk_id:    r.id,
           session_id:  chunk.session_id  || r.session_id  || '',
           session_url: chunk.session_url || r.session_url || '',
           platform:    chunk.platform    || r.platform    || '',
           created_at:  chunk.created_at  || r.created_at  || '',
-          snippet:     extractSnippet(chunk.raw_content || '', query),
+          raw_content: rawContent,
+          snippet:     extractSnippet(rawContent, query),
           score:       r.score || 0
         };
       });

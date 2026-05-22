@@ -36,6 +36,7 @@
       '<div id="ck-search-results" style="margin-top:8px;max-height:250px;overflow-y:auto;"></div>';
     document.body.appendChild(sp);
 
+
     document.getElementById('ck-search-input').addEventListener('input', function(e) {
       var q = e.target.value.trim();
       var resultsEl = document.getElementById('ck-search-results');
@@ -43,11 +44,14 @@
       if (window._ckEngine) {
         Promise.resolve(window._ckEngine.search(q)).then(function(results) {
           resultsEl.innerHTML = results.slice(0,5).map(function(r) {
-            var preview = (r.raw_content||'').replace(/\n/g,' ').trim().slice(0,100);
+            // snippet은 extractSnippet()이 반환한 HTML, raw_content는 텍스트 fallback
+            var snippetHtml = (r.snippet && r.snippet.length > 0)
+              ? r.snippet
+              : (r.raw_content||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,' ').trim().slice(0,120);
             return '<div style="padding:6px 8px;border-bottom:1px solid #2a3a3a;cursor:pointer;" ' +
               'onclick="window.open(\'' + (r.session_url||'#') + '\');">' +
               '<div style="font-size:10px;color:#67e8f9;">' + (r.platform||'') + ' · ' + (r.created_at||'').slice(0,10) + '</div>' +
-              '<div style="margin-top:3px;font-size:11px;color:#e2e8f0;line-height:1.4;">' + preview + (preview.length>=100?'...':'') + '</div>' +
+              '<div style="margin-top:3px;font-size:11px;color:#e2e8f0;line-height:1.4;">' + (snippetHtml||'(내용 없음)') + '</div>' +
               '</div>';
           }).join('') || '<div style="color:#666;padding:6px;">결과 없음</div>';
         }).catch(function(e) {
@@ -75,7 +79,7 @@
     CK.lastSavedHash = hash;
     var chatId = CK.getChatId();
     var chunk = {
-      chunk_id:    CK.hashText(chatId + '_' + Date.now()),
+      chunk_id:    CK.hashText(chatId),  // session당 1개 upsert
       session_id:  chatId,
       session_url: location.href,
       platform:    CK.getPlatformKey(),
@@ -98,6 +102,18 @@
     console.log('[CK-DEBUG] CK.LocalSearch:', typeof CK.LocalSearch);
     console.log('[CK-DEBUG] CK.IndexedDBStore:', typeof CK.IndexedDBStore);
     console.log('[CK-DEBUG] CK.observer:', typeof CK.observer);
+    // ESC 키: 검색 패널 닫기 (document 레벨, 1회만 등록)
+    // [CK] ESC 핸들러 등록 완료
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var panel = document.getElementById('ck-search-panel');
+        if (panel && panel.style.display !== 'none') {
+          panel.style.display = 'none';
+          e.stopPropagation();
+        }
+      }
+    }, true);
+
     var target = document.querySelector('.conversation-content')
       || document.querySelector('.chat-wrapper')
       || document.body;
