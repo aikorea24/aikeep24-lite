@@ -170,8 +170,9 @@
             var icon  = platIcon[s.platform] || '\u{1F4AC}';
             var _raw = s.raw_content || '';
             // ## [USER] 또는 [USER] 두 가지 포맷 모두 지원
-            var _m = _raw.match(/##\s*\[USER\]\s*\n+([\s\S]+?)(?=\n+---|\n+##\s*\[ASSISTANT\]|$)/)
-                  || _raw.match(/\[USER\]\s*\n*([\s\S]+?)(?=\[ASSISTANT\]|---\n|$)/);
+            // USER 또는 ASSISTANT 첫 블록에서 타이틀 추출
+            var _m = _raw.match(/##\s*\[(?:USER|ASSISTANT)\]\s*\n+([\s\S]+?)(?=\n+---|\n+##|$)/)
+                  || _raw.match(/\[(?:USER|ASSISTANT)\]\s*\n*([\s\S]+?)(?=\[(?:USER|ASSISTANT)\]|---\n|$)/);
             var title = (_m ? _m[1] : _raw)
               .replace(/##\s*\[(USER|ASSISTANT)\]/g, '')
               .replace(/[\n\r]+/g, ' ').replace(/\[USER\]|\[ASSISTANT\]/g, '').trim().slice(0, 60)
