@@ -118,9 +118,7 @@
     btnBrowse.innerText = 'BRW';
     btnBrowse.style.cssText = 'background:#f472b6;color:#0f172a;' + btnStyle;
 
-    var browsePanel = document.createElement('div');
-    browsePanel.id = 'ck-browse-panel';
-    browsePanel.style.cssText = 'display:none;background:rgba(10,30,30,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px;max-height:350px;overflow-y:auto;min-width:280px;backdrop-filter:blur(8px);';
+    // ck-browse-panel은 content.js openBrowsePanel()에서 동적 생성
 
     btnBrowse.onclick = function() {
       CK.openBrowsePanel && CK.openBrowsePanel();
@@ -128,7 +126,6 @@
     btnBox.appendChild(btnBrowse);
 
     panel.appendChild(btnBox);
-    panel.appendChild(browsePanel);
     panel.appendChild(badge);
     document.body.appendChild(panel);
   };
