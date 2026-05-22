@@ -1,0 +1,9 @@
+name = "aikeep24lite-worker"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aikeep24lite-db"
+database_id = "9d307e6d-9eae-446d-b85a-97051e491969"

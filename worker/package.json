@@ -1,0 +1,10 @@
+{
+  "name": "aikeep24lite-worker",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute aikeep24lite-db --remote --file=./schema.sql"
+  }
+}
