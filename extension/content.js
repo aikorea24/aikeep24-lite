@@ -64,6 +64,110 @@
   };
 
 
+  /** BROWSE: 세션 브라우저 패널 토글 */
+  CK.openBrowsePanel = function() {
+    var panel = document.getElementById('ck-browse-panel');
+    if (panel) {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      if (panel.style.display !== 'none') CK._loadBrowseSessions(panel);
+      return;
+    }
+
+    var bp = document.createElement('div');
+    bp.id = 'ck-browse-panel';
+    bp.style.cssText = 'position:fixed;bottom:60px;right:10px;z-index:999999;' +
+      'background:rgba(20,25,40,0.97);border:1px solid rgba(255,255,255,0.15);' +
+      'border-radius:12px;padding:12px;width:320px;color:#fff;font-size:13px;' +
+      'max-height:420px;display:flex;flex-direction:column;';
+    bp.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<span style="font-weight:bold;">📚 Session Browser</span>' +
+        '<select id="ck-brw-filter" style="background:#1e2330;color:#94a3b8;border:1px solid #444;' +
+          'border-radius:4px;font-size:11px;padding:2px 4px;">' +
+          '<option value="">All</option>' +
+          '<option value="chatgpt">ChatGPT</option>' +
+          '<option value="claude">Claude</option>' +
+          '<option value="genspark">Genspark</option>' +
+        '</select>' +
+      '</div>' +
+      '<div id="ck-brw-list" style="overflow-y:auto;flex:1;"></div>';
+    document.body.appendChild(bp);
+
+    document.getElementById('ck-brw-filter').addEventListener('change', function() {
+      CK._loadBrowseSessions(bp);
+    });
+    CK._loadBrowseSessions(bp);
+  };
+
+  /** 세션 브라우저 내부: IndexedDB에서 세션 목록 로드 */
+  CK._loadBrowseSessions = function(panel) {
+    var listEl = document.getElementById('ck-brw-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="color:#666;padding:6px;font-size:11px;">불러오는 중...</div>';
+
+    var filterPlatform = (document.getElementById('ck-brw-filter') || {}).value || '';
+
+    CK.IndexedDBStore.getAllChunks().then(function(chunks) {
+      // 세션 단위로 그룹화 (chunk_id 하나 = session 하나 in Lite)
+      var sessions = chunks
+        .filter(function(c) { return !filterPlatform || c.platform === filterPlatform; })
+        .sort(function(a, b) { return a.created_at > b.created_at ? -1 : 1; });
+
+      if (sessions.length === 0) {
+        listEl.innerHTML = '<div style="color:#666;padding:6px;font-size:11px;">저장된 세션 없음</div>';
+        return;
+      }
+
+      // 날짜 구간 그룹화
+      var now = new Date();
+      var groups = { pinned: [], week: [], month: [], older: [] };
+      sessions.forEach(function(s) {
+        var d = new Date(s.created_at);
+        var diff = (now - d) / 86400000;
+        if (diff <= 7)       groups.week.push(s);
+        else if (diff <= 30) groups.month.push(s);
+        else                 groups.older.push(s);
+      });
+
+      var platIcon = { chatgpt: '🤖', claude: '🟠', genspark: '🟢' };
+      function renderGroup(label, items) {
+        if (!items.length) return '';
+        var html = '<div style="font-size:10px;color:#475569;padding:4px 6px 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">' + label + '</div>';
+        items.forEach(function(s) {
+          var icon = platIcon[s.platform] || '💬';
+          var title = (s.raw_content || '').replace(/
+/g, ' ').trim().slice(0, 45) || s.session_id.slice(0, 12);
+          var date = (s.created_at || '').slice(0, 10);
+          html += '<div class="ck-brw-item" data-url="' + (s.session_url || '#') + '" ' +
+            'style="padding:6px 8px;border-bottom:1px solid #1e2a3a;cursor:pointer;border-radius:4px;">' +
+            '<div style="font-size:10px;color:#67e8f9;">' + icon + ' ' + (s.platform || '') + ' · ' + date + '</div>' +
+            '<div style="font-size:11px;color:#e2e8f0;margin-top:2px;line-height:1.4;">' +
+              title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+            '</div>' +
+          '</div>';
+        });
+        return html;
+      }
+
+      listEl.innerHTML =
+        renderGroup('📅 이번 주', groups.week) +
+        renderGroup('📅 이번 달', groups.month) +
+        renderGroup('📅 이전', groups.older);
+
+      listEl.querySelectorAll('.ck-brw-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var url = el.getAttribute('data-url');
+          if (url && url !== '#') window.open(url, '_blank');
+        });
+        el.addEventListener('mouseenter', function() { el.style.background = 'rgba(103,232,249,0.08)'; });
+        el.addEventListener('mouseleave', function() { el.style.background = ''; });
+      });
+    }).catch(function(e) {
+      listEl.innerHTML = '<div style="color:#f87171;padding:6px;font-size:11px;">오류: ' + e.message + '</div>';
+    });
+  };
+
+
   CK.lastSavedHash = null;
 
   /**
@@ -149,12 +253,19 @@
     // ESC 키: 검색 패널 닫기 (document 레벨, 1회만 등록)
     // [CK] ESC 핸들러 등록 완료
     document.addEventListener('keydown', function(e) {
+      // ESC: 열린 패널 닫기 (Search 또는 Browse)
       if (e.key === 'Escape') {
-        var panel = document.getElementById('ck-search-panel');
-        if (panel && panel.style.display !== 'none') {
-          panel.style.display = 'none';
-          e.stopPropagation();
-        }
+        var sp = document.getElementById('ck-search-panel');
+        var bp = document.getElementById('ck-browse-panel');
+        if (sp && sp.style.display !== 'none') { sp.style.display = 'none'; e.stopPropagation(); return; }
+        if (bp && bp.style.display !== 'none') { bp.style.display = 'none'; e.stopPropagation(); return; }
+      }
+      // Cmd+K (Mac) / Ctrl+K (Win): Search 패널 열기
+      if (e.key === 'K' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        CK.openSearchPanel && CK.openSearchPanel();
+        var inp = document.getElementById('ck-search-input');
+        if (inp) { setTimeout(function(){ inp.focus(); }, 50); }
       }
     }, true);
 

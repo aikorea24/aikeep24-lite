@@ -47,11 +47,11 @@
    * @returns {string} n-gram 확장 쿼리 문자열
    */
   CK.expandQueryNgrams = function(query) {
-    var ngramPart = CK.generateKoreanNgrams(query);
+    var ngramArr = CK.generateKoreanNgrams(query);  // 배열 반환
     // 원본 쿼리 토큰 + n-gram 토큰을 합쳐서 반환
     // FTS5/minisearch 양쪽에서 OR 매칭 가능하도록 공백 구분
     var parts = [query.trim()];
-    if (ngramPart) parts.push(ngramPart);
+    if (ngramArr && ngramArr.length > 0) parts.push(ngramArr.join(' '));  // ← .join(' ') 필수
     return parts.join(' ');
   };
 

@@ -123,12 +123,7 @@
     browsePanel.style.cssText = 'display:none;background:rgba(10,30,30,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px;max-height:350px;overflow-y:auto;min-width:280px;backdrop-filter:blur(8px);';
 
     btnBrowse.onclick = function() {
-      var sp = document.getElementById('ck-search-panel');
-      if (sp) {
-        sp.style.display = sp.style.display === 'none' ? 'block' : 'none';
-      } else {
-        CK.openSearchPanel && CK.openSearchPanel();
-      }
+      CK.openBrowsePanel && CK.openBrowsePanel();
     };
     btnBox.appendChild(btnBrowse);
 
