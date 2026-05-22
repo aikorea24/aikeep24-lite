@@ -68,7 +68,28 @@
   CK.openBrowsePanel = function() {
     var panel = document.getElementById('ck-browse-panel');
     if (panel) {
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      // ck-brw-list 없는 빈 패널이면 내용 재생성
+      if (!document.getElementById('ck-brw-list')) {
+        panel.style.cssText = 'position:fixed;bottom:60px;right:10px;z-index:999999;'
+          + 'background:rgba(20,25,40,0.97);border:1px solid rgba(255,255,255,0.15);'
+          + 'border-radius:12px;padding:12px;width:320px;color:#fff;font-size:13px;'
+          + 'max-height:420px;display:flex;flex-direction:column;';
+        panel.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+          + '<span style="font-weight:bold;">Session Browser</span>'
+          + '<select id="ck-brw-filter" style="background:#1e2330;color:#94a3b8;border:1px solid #444;'
+          + 'border-radius:4px;font-size:11px;padding:2px 4px;">'
+          + '<option value="">All</option>'
+          + '<option value="chatgpt">ChatGPT</option>'
+          + '<option value="claude">Claude</option>'
+          + '<option value="genspark">Genspark</option>'
+          + '</select></div>'
+          + '<div id="ck-brw-list" style="overflow-y:auto;flex:1;"></div>';
+        document.getElementById('ck-brw-filter').addEventListener('change', function() {
+          CK._loadBrowseSessions(panel);
+        });
+      }
+      panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
       if (panel.style.display !== 'none') CK._loadBrowseSessions(panel);
       return;
     }
@@ -111,7 +132,15 @@
       var pinned = data.ck_pinned || [];
 
       CK.IndexedDBStore.getAllChunks().then(function(chunks) {
-        var sessions = chunks
+        // session_id 기준 최신 청크 1개만 남기기 (dedup)
+        var sessionMap = {};
+        chunks.forEach(function(c) {
+          var sid = c.session_id || c.chunk_id;
+          if (!sessionMap[sid] || c.created_at > sessionMap[sid].created_at) {
+            sessionMap[sid] = c;
+          }
+        });
+        var sessions = Object.values(sessionMap)
           .filter(function(c) { return !filterPlatform || c.platform === filterPlatform; })
           .sort(function(a, b) { return a.created_at > b.created_at ? -1 : 1; });
 
@@ -139,8 +168,14 @@
           items.forEach(function(s) {
             var isPinned = pinned.indexOf(s.chunk_id) > -1;
             var icon  = platIcon[s.platform] || '\u{1F4AC}';
-            var title = (s.raw_content || '').replace(/[\n\r]+/g, ' ').trim().slice(0, 45)
-                        || s.session_id.slice(0, 12);
+            var _raw = s.raw_content || '';
+            // ## [USER] 또는 [USER] 두 가지 포맷 모두 지원
+            var _m = _raw.match(/##\s*\[USER\]\s*\n+([\s\S]+?)(?=\n+---|\n+##\s*\[ASSISTANT\]|$)/)
+                  || _raw.match(/\[USER\]\s*\n*([\s\S]+?)(?=\[ASSISTANT\]|---\n|$)/);
+            var title = (_m ? _m[1] : _raw)
+              .replace(/##\s*\[(USER|ASSISTANT)\]/g, '')
+              .replace(/[\n\r]+/g, ' ').replace(/\[USER\]|\[ASSISTANT\]/g, '').trim().slice(0, 60)
+              || s.session_id.slice(0, 12);
             var date  = (s.created_at || '').slice(0, 10);
             var safeTitle = title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             html += '<div class="ck-brw-item" data-cid="' + s.chunk_id + '" ' +

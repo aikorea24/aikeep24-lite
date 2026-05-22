@@ -85,7 +85,7 @@
   CK.formatChunk = function(turnList) {
     return turnList.map(function(t) {
       var label = t.role === 'user' ? 'USER' : 'ASSISTANT';
-      return '[' + label + ']\n' + t.text;
+      return '## [' + label + ']\n\n' + t.text;
     }).join('\n\n---\n\n');
   };
 
