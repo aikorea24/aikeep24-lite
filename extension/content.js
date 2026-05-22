@@ -91,11 +91,55 @@
     };
     var store = CK.IndexedDBStore;
     store.saveChunk(chunk).then(function() {
+      if (CK.CONFIG.API_KEY) CK.syncChunkToWorker(chunk);
       CK.updateStatus && CK.updateStatus('저장됨');
       if (window._ckEngine) window._ckEngine.add(chunk);
     }).catch(function(e) { console.error('[CK] 저장 실패', e); });
   };
 
+
+  /**
+   * Mode B: 청크를 Cloudflare Worker(D1)로 동기화
+   * API_KEY 없으면 스킵 (Mode A 전용 사용자)
+   */
+  CK.syncChunkToWorker = function(chunk) {
+    var url = CK.CONFIG.WORKER_URL;
+    var key = CK.CONFIG.API_KEY;
+    if (!url || !key) return Promise.resolve(null);
+
+    var payload = {
+      chunk_id:   chunk.chunk_id,
+      session_id: chunk.session_id,
+      session_url: chunk.session_url || chunk.url || '',
+      platform:   chunk.platform || '',
+      title:      chunk.title || '',
+      raw_content: chunk.raw_content || '',
+      raw_ngrams:  chunk.raw_ngrams || '',
+      created_at:  chunk.created_at || new Date().toISOString(),
+      turn_count:  chunk.turn_count || 0
+    };
+
+    return fetch(url + '/api/chunk/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        console.log('[CK] D1 동기화 완료:', chunk.chunk_id);
+      } else {
+        console.warn('[CK] D1 동기화 실패:', data.error || data);
+      }
+      return data;
+    })
+    .catch(function(err) {
+      console.warn('[CK] D1 동기화 오류:', err.message);
+    });
+  };
 
   function init() {
     console.log('[CK-DEBUG] init() called');
