@@ -72,12 +72,22 @@
 
     var els = document.querySelectorAll(platform.turnSelector);
     var result = [];
+    // 건너뛸 시스템 메시지 패턴
+    var SKIP_PATTERNS = [
+      '성능 향상을 위해 이전 채팅 기록이 압축되었습니다',
+      '이전 채팅 기록이 압축',
+      'previous messages have been summarized',
+      'conversation has been compressed'
+    ];
+
     els.forEach(function(el) {
       var role = platform.roleDetect(el);
       var text = el.innerText.trim();
-      if (text.length > 0) {
-        result.push({ role: role, text: text });
-      }
+      if (text.length === 0) return;
+      // 시스템 압축 메시지 건너뛰기
+      var isSkip = SKIP_PATTERNS.some(function(p) { return text.indexOf(p) > -1; });
+      if (isSkip) return;
+      result.push({ role: role, text: text });
     });
     return result;
   };
