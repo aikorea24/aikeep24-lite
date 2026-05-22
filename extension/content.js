@@ -231,7 +231,12 @@
     store.saveChunk(chunk).then(function() {
       if (CK.CONFIG.API_KEY) CK.syncChunkToWorker(chunk);
       CK.updateStatus && CK.updateStatus('저장됨');
-      if (window._ckEngine) window._ckEngine.add(chunk);
+      // Mode B면 LocalSearch에도 add (로컬 검색 fallback용)
+      // 중복 add는 local-search.js에서 catch로 처리되므로 무시
+      if (CK.LocalSearch) CK.LocalSearch.add(chunk);
+      if (window._ckEngine && window._ckEngine !== CK.LocalSearch) {
+        window._ckEngine.add(chunk);
+      }
     }).catch(function(e) { console.error('[CK] 저장 실패', e); });
   };
 
@@ -295,7 +300,7 @@
         if (bp && bp.style.display !== 'none') { bp.style.display = 'none'; e.stopPropagation(); return; }
       }
       // Cmd+K (Mac) / Ctrl+K (Win): Search 패널 열기
-      if (e.key === 'K' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+      if (e.key === 'F' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
         e.preventDefault();
         CK.openSearchPanel && CK.openSearchPanel();
         var inp = document.getElementById('ck-search-input');
