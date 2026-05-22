@@ -61,7 +61,9 @@ CK.loadSettings = function(callback) {
     'ck_num_ctx', 'ck_num_predict', 'ck_temperature',
     'ck_turns_per_chunk', 'ck_max_text_len', 'ck_thinking'
   ];
+  console.log('[CK-DEBUG] loadSettings called');
   chrome.storage.local.get(keys, function(data) {
+    console.log('[CK-DEBUG] storage callback fired');
     if (data.ck_ollama_url) {
       CK.CONFIG.OLLAMA_TAGS_URL = data.ck_ollama_url + '/api/tags';
     }

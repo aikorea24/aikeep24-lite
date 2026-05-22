@@ -72,7 +72,8 @@
         toIndex.forEach(function(c) { _chunkCache[c.chunk_id] = c; });
 
         console.log('[CK] LocalSearch: indexed ' + toIndex.length + ' chunks');
-      });
+        return _index;
+      }).then(function(idx) { return idx || _index; });
     },
 
     /**

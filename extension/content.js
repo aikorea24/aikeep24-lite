@@ -3,6 +3,7 @@
  * 모듈 로드 순서: config -> dom-parser -> ollama -> api -> summarizer -> ui -> observer -> content
  */
 (function() {
+  console.log('[CK-IIFE] content.js IIFE started');
   var CK = window.CK;
 
   /** SNAP: 마지막 N턴 클립보드 복사 */
@@ -40,13 +41,18 @@
       var resultsEl = document.getElementById('ck-search-results');
       if (!q || q.length < 2) { resultsEl.innerHTML = ''; return; }
       if (window._ckEngine) {
-        var results = window._ckEngine.search(q);
-        resultsEl.innerHTML = results.slice(0,5).map(function(r) {
-          return '<div style="padding:6px;border-bottom:1px solid #333;cursor:pointer;">' +
-            '<div style="font-size:11px;color:#94a3b8;">' + (r.platform||'') + ' · ' + (r.created_at||'').slice(0,10) + '</div>' +
-            '<div style="margin-top:2px;">' + (r.raw_content||'').slice(0,80) + '...</div>' +
-            '</div>';
-        }).join('') || '<div style="color:#666;padding:6px;">결과 없음</div>';
+        Promise.resolve(window._ckEngine.search(q)).then(function(results) {
+          resultsEl.innerHTML = results.slice(0,5).map(function(r) {
+            var preview = (r.raw_content||'').replace(/\n/g,' ').trim().slice(0,100);
+            return '<div style="padding:6px 8px;border-bottom:1px solid #2a3a3a;cursor:pointer;" ' +
+              'onclick="window.open(\'' + (r.session_url||'#') + '\');">' +
+              '<div style="font-size:10px;color:#67e8f9;">' + (r.platform||'') + ' · ' + (r.created_at||'').slice(0,10) + '</div>' +
+              '<div style="margin-top:3px;font-size:11px;color:#e2e8f0;line-height:1.4;">' + preview + (preview.length>=100?'...':'') + '</div>' +
+              '</div>';
+          }).join('') || '<div style="color:#666;padding:6px;">결과 없음</div>';
+        }).catch(function(e) {
+          resultsEl.innerHTML = '<div style="color:#f87171;padding:6px;">검색 오류: ' + e.message + '</div>';
+        });
       } else {
         resultsEl.innerHTML = '<div style="color:#666;padding:6px;">검색 인덱스 로딩 중...</div>';
       }
@@ -88,6 +94,10 @@
 
 
   function init() {
+    console.log('[CK-DEBUG] init() called');
+    console.log('[CK-DEBUG] CK.LocalSearch:', typeof CK.LocalSearch);
+    console.log('[CK-DEBUG] CK.IndexedDBStore:', typeof CK.IndexedDBStore);
+    console.log('[CK-DEBUG] CK.observer:', typeof CK.observer);
     var target = document.querySelector('.conversation-content')
       || document.querySelector('.chat-wrapper')
       || document.body;
@@ -98,6 +108,16 @@
     bodyObserver.observe(document.body, { childList: true });
 
     CK.ensureUI();
+
+    // 검색 엔진 초기화 + 기존 청크 인덱스 로드
+    if (CK.LocalSearch && CK.IndexedDBStore) {
+      CK.LocalSearch.init().then(function() {
+        window._ckEngine = CK.LocalSearch;
+        console.log('[CK] 검색 인덱스 초기화 완료');
+      }).catch(function(e) {
+        console.error('[CK] 검색 인덱스 초기화 실패', e);
+      });
+    }
 
     // keepalive ping
     setInterval(function() {
