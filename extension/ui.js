@@ -32,7 +32,7 @@
 
     var badge = document.createElement('div');
     badge.id = 'ck-badge';
-    badge.style.cssText = 'display:none;background:rgba(20,25,40,0.92);color:#b0b8c8;font-size:11px;padding:8px 12px;border-radius:6px;max-width:350px;line-height:1.4;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.08);font-family:monospace;white-space:pre-wrap;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+    badge.style.cssText = 'display:none;background:rgba(10,30,30,0.92);color:#b0b8c8;font-size:11px;padding:8px 12px;border-radius:6px;max-width:350px;line-height:1.4;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.08);font-family:monospace;white-space:pre-wrap;box-shadow:0 2px 8px rgba(0,0,0,0.5);';
 
     var btnBox = document.createElement('div');
     btnBox.style.cssText = 'display:flex;gap:4px;align-items:center;';
@@ -43,7 +43,7 @@
     var btnToggle = document.createElement('button');
     btnToggle.id = 'ck-toggle-btn';
     btnToggle.innerText = 'ON';
-    btnToggle.style.cssText = 'background:#86efac;color:#0f172a;' + btnStyle;
+    btnToggle.style.cssText = 'background:#67e8f9;color:#0f172a;' + btnStyle;
     btnToggle.onclick = function() {
       CK.enabled = !CK.enabled;
       btnToggle.innerText = CK.enabled ? 'ON' : 'OFF';
@@ -67,7 +67,7 @@
         var btnSave = document.createElement('button');
     btnSave.id = 'ck-save-btn';
     btnSave.innerText = 'SAVE';
-    btnSave.style.cssText = 'background:#86efac;color:#0f172a;' + btnStyle;
+    btnSave.style.cssText = 'background:#34d399;color:#0f172a;' + btnStyle;
     btnSave.onclick = function() {
       CK.saveChunkIfChanged(true);
       btnSave.innerText = '✓';
@@ -82,7 +82,7 @@
     var btnSnap = document.createElement('button');
     btnSnap.id = 'ck-snap-btn';
     btnSnap.innerText = 'SNAP';
-    btnSnap.style.cssText = 'background:#fbbf24;color:#0f172a;' + btnStyle;
+    btnSnap.style.cssText = 'background:#fb923c;color:#0f172a;' + btnStyle;
     btnSnap.onclick = function() {
       var allTurns = CK.extractTurns ? CK.extractTurns() : [];
       if (!allTurns || allTurns.length < 1) {
@@ -107,7 +107,7 @@
     var btnSearch = document.createElement('button');
     btnSearch.id = 'ck-search-btn';
     btnSearch.innerText = 'SEARCH';
-    btnSearch.style.cssText = 'background:#93c5fd;color:#0f172a;' + btnStyle;
+    btnSearch.style.cssText = 'background:#a78bfa;color:#0f172a;' + btnStyle;
     btnSearch.onclick = function() { CK.openSearchPanel(); };
     btnBox.appendChild(btnSearch);
 
@@ -116,11 +116,11 @@
     var btnBrowse = document.createElement('button');
     btnBrowse.id = 'ck-browse-btn';
     btnBrowse.innerText = 'BRW';
-    btnBrowse.style.cssText = 'background:#c4a7e7;color:#0f172a;' + btnStyle;
+    btnBrowse.style.cssText = 'background:#f472b6;color:#0f172a;' + btnStyle;
 
     var browsePanel = document.createElement('div');
     browsePanel.id = 'ck-browse-panel';
-    browsePanel.style.cssText = 'display:none;background:rgba(20,25,40,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px;max-height:350px;overflow-y:auto;min-width:280px;backdrop-filter:blur(8px);';
+    browsePanel.style.cssText = 'display:none;background:rgba(10,30,30,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px;max-height:350px;overflow-y:auto;min-width:280px;backdrop-filter:blur(8px);';
 
     btnBrowse.onclick = function() {
       var sp = document.getElementById('ck-search-panel');
@@ -189,7 +189,7 @@
 
   // === BRW 패널 로드 ===
   function loadBrowsePanel(browsePanel, badge) {
-    browsePanel.innerHTML = '<div style="padding:4px 6px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:4px;"><input id="ck-search-input" type="text" placeholder="벡터 검색..." style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#e4e4e7;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;"/></div><div id="ck-brw-content" style="color:#888;font-size:11px;padding:4px 8px;">Loading...</div>';
+    browsePanel.innerHTML = '<div style="padding:4px 6px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:4px;"><input id="ck-search-input" type="text" placeholder="벡터 검색..." style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(103,232,249,0.25);border-radius:6px;color:#e4e4e7;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;"/></div><div id="ck-brw-content" style="color:#888;font-size:11px;padding:4px 8px;">Loading...</div>';
 
     setTimeout(function() {
       var searchInput = document.getElementById('ck-search-input');
@@ -219,7 +219,7 @@
         var tR = 'T' + (r.turn_start || 0) + '-' + (r.turn_end || 0);
         var proj = r.project || '';
         var sum = (r.chunk_summary || '').substring(0, 60);
-        sh += '<div style="padding:4px 8px;cursor:pointer;border-radius:4px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.4;" data-search-sid="' + r.session_id + '"><span style="color:#86efac;font-size:9px;">' + score + '%</span> <span style="color:#c4a7e7;">' + proj + '</span> <span style="color:#93c5fd;">' + tR + '</span><br/>' + sum + '</div>';
+        sh += '<div style="padding:4px 8px;cursor:pointer;border-radius:4px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.4;" data-search-sid="' + r.session_id + '"><span style="color:#34d399;font-size:9px;">' + score + '%</span> <span style="color:#f472b6;">' + proj + '</span> <span style="color:#a78bfa;">' + tR + '</span><br/>' + sum + '</div>';
       });
       contentDiv.innerHTML = sh;
       contentDiv.querySelectorAll('[data-search-sid]').forEach(function(el) {
@@ -254,20 +254,20 @@
       if (!contentDiv) return;
       var html = '';
       if (chunks.length > 0) {
-        html += '<div style="color:#86efac;font-size:10px;font-weight:700;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:2px;">THIS CHAT (' + chunks.length + ' chunks)</div>';
+        html += '<div style="color:#34d399;font-size:10px;font-weight:700;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:2px;">THIS CHAT (' + chunks.length + ' chunks)</div>';
         chunks.forEach(function(ch, i) {
           var tRange = 'T' + (ch.turn_start || 0) + '-' + (ch.turn_end || 0);
           var rawSum = ch.chunk_summary || ch.chunk_checkpoint || '(요약 없음)';
           var sum = tRange + ' ' + rawSum.substring(0, 45);
           var hasRaw = ch.raw_content && ch.raw_content.length > 0;
-          html += '<div style="padding:3px 8px;cursor:pointer;border-radius:4px;font-size:10px;color:#d4d4d8;transition:background 0.15s;line-height:1.3;" data-chunk-idx="' + i + '"><span style="color:#93c5fd;">[' + (i + 1) + ']</span> ' + sum + '...' + (hasRaw ? ' <span style="color:#ffd166;font-size:8px;">[RAW]</span>' : '') + '</div>';
+          html += '<div style="padding:3px 8px;cursor:pointer;border-radius:4px;font-size:10px;color:#d4d4d8;transition:background 0.15s;line-height:1.3;" data-chunk-idx="' + i + '"><span style="color:#a78bfa;">[' + (i + 1) + ']</span> ' + sum + '...' + (hasRaw ? ' <span style="color:#ffd166;font-size:8px;">[RAW]</span>' : '') + '</div>';
         });
         html += '<div style="border-top:1px solid rgba(255,255,255,0.1);margin:2px 0;"></div>';
       } else {
         html += '<div style="color:#888;font-size:10px;padding:4px 8px;">No chunks yet. Run first.</div>';
         html += '<div style="border-top:1px solid rgba(255,255,255,0.1);margin:2px 0;"></div>';
       }
-      html += '<div style="color:#86efac;font-size:10px;font-weight:700;padding:4px 8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.1);" id="ck-brw-all-sessions">ALL SESSIONS</div>';
+      html += '<div style="color:#34d399;font-size:10px;font-weight:700;padding:4px 8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.1);" id="ck-brw-all-sessions">ALL SESSIONS</div>';
 
       contentDiv.innerHTML = html;
 
@@ -292,7 +292,7 @@
       }
     }).catch(function() {
       var contentDiv = document.getElementById('ck-brw-content');
-      if (contentDiv) contentDiv.innerHTML = '<div style="color:#888;font-size:10px;padding:4px 8px;">No chunks yet. Run first.</div><div style="color:#86efac;font-size:10px;font-weight:700;padding:4px 8px;cursor:pointer;" id="ck-brw-all-sessions">ALL SESSIONS</div>';
+      if (contentDiv) contentDiv.innerHTML = '<div style="color:#888;font-size:10px;padding:4px 8px;">No chunks yet. Run first.</div><div style="color:#34d399;font-size:10px;font-weight:700;padding:4px 8px;cursor:pointer;" id="ck-brw-all-sessions">ALL SESSIONS</div>';
       var allBtn = document.getElementById('ck-brw-all-sessions');
       if (allBtn) allBtn.onclick = function() { loadAllSessions(contentDiv, badge); };
     });
@@ -303,7 +303,7 @@
     CK.fetchSessions(30).then(function(j) {
       var sessions = j.results || [];
       if (!sessions.length) { container.innerHTML = '<div style="color:#888;font-size:11px;">No sessions</div>'; return; }
-      var sh = '<div style="color:#86efac;font-size:10px;padding:2px 8px;font-weight:700;">ALL SESSIONS (' + sessions.length + ')</div>';
+      var sh = '<div style="color:#34d399;font-size:10px;padding:2px 8px;font-weight:700;">ALL SESSIONS (' + sessions.length + ')</div>';
       sessions.forEach(function(s) {
         var label = s.project || s.title || s.session_id.substring(0, 8);
         sh += '<div style="padding:3px 8px;cursor:pointer;border-radius:6px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);" data-sid="' + s.session_id + '">' + label + ' <span style="color:#666;">(' + (s.total_turns || 0) + 't)</span></div>';
@@ -323,12 +323,12 @@
     CK.fetchSession(sid).then(function(sess) {
       var cks = sess.chunks || [];
       if (!cks.length) { container.innerHTML = '<div style="color:#888;font-size:11px;">No chunks</div>'; return; }
-      var ch = '<div style="color:#86efac;font-size:10px;padding:2px 8px;font-weight:700;">' + (sess.project || sess.title || sid.substring(0, 8)) + ' (' + cks.length + ' chunks)</div>';
+      var ch = '<div style="color:#34d399;font-size:10px;padding:2px 8px;font-weight:700;">' + (sess.project || sess.title || sid.substring(0, 8)) + ' (' + cks.length + ' chunks)</div>';
       cks.forEach(function(ck, idx) {
         var tR = 'T' + (ck.turn_start || 0) + '-' + (ck.turn_end || 0);
         var sm = tR + ' ' + (ck.chunk_summary || '(요약 없음)').substring(0, 50);
         var hasR = ck.raw_content && ck.raw_content.length > 0;
-        ch += '<div style="padding:3px 8px;cursor:pointer;border-radius:6px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);" data-cidx="' + idx + '">[' + (idx + 1) + '] ' + sm + (hasR ? ' <span style="color:#86efac">[RAW]</span>' : '') + '</div>';
+        ch += '<div style="padding:3px 8px;cursor:pointer;border-radius:6px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);" data-cidx="' + idx + '">[' + (idx + 1) + '] ' + sm + (hasR ? ' <span style="color:#34d399">[RAW]</span>' : '') + '</div>';
       });
       container.innerHTML = ch;
       container.querySelectorAll('[data-cidx]').forEach(function(cel) {
