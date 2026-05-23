@@ -28,6 +28,40 @@ CK.CONFIG = {
       turnSelector: null,
       roleDetect: 'parent-structure',
       skipSelectors: ''
+    },
+    grok: {
+      hostMatch: 'grok.com',
+      turnSelector: null,
+      roleDetect: 'dual-selector',
+      userSelector: '[data-testid="user-message"]',
+      assistantSelector: '.response-content-markdown',
+      skipSelectors: ''
+    },
+
+    deepseek: {
+      hostMatch: 'chat.deepseek.com',
+      turnSelector: '[class*="ds-message"]',
+      roleDetect: function(el) {
+        return el.querySelector('[class*="ds-assistant-message-main"]')
+          ? 'assistant' : 'user';
+      },
+      skipSelectors: []
+    },
+    gemini: {
+      hostMatch: 'gemini.google.com',
+      turnSelector: null,
+      userSelector: 'user-query',
+      assistantSelector: 'model-response',
+      roleDetect: 'dual-selector',
+      skipSelectors: []
+    },
+    metaai: {
+      hostMatch: 'meta.ai',
+      turnSelector: null,
+      roleDetect: 'dual-selector',
+      userSelector: '[data-message-type="user"]',
+      assistantSelector: '.ur-markdown',
+      skipSelectors: ''
     }
   }
 };
