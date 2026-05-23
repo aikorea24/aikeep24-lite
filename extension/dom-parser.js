@@ -128,3 +128,97 @@
   };
 
 })();
+
+/* ============================================================
+   셀렉터 복원력 시스템 (v0.5.0)
+   ============================================================ */
+
+CK._selectorsFetched = false;
+
+CK.fetchRemoteSelectors = async function() {
+  if (CK._selectorsFetched) return;
+  CK._selectorsFetched = true;
+  try {
+    var endpoint = CK.CONFIG.SELECTOR_UPDATE_URL ||
+      (CK.CONFIG.WORKER_URL + '/api/selectors');
+    var res = await fetch(endpoint, { cache: 'no-store' });
+    if (!res.ok) return;
+    var data = await res.json();
+    if (data.version > (CK.CONFIG.SELECTOR_VERSION || 0)) {
+      Object.keys(data.platforms || {}).forEach(function(key) {
+        if (CK.CONFIG.PLATFORMS[key]) {
+          Object.assign(CK.CONFIG.PLATFORMS[key], data.platforms[key]);
+          console.info('[CK] 셀렉터 원격 업데이트:', key, 'v' + data.version);
+        }
+      });
+      CK.CONFIG.SELECTOR_VERSION = data.version;
+    }
+  } catch(e) { /* 네트워크 오류 무시 */ }
+};
+
+CK.validateSelectors = function() {
+  var platform = CK.detectPlatform ? CK.detectPlatform() : null;
+  if (!platform) return { ok: false, reason: 'unknown_platform' };
+  var warnings = [];
+
+  if (platform.turnSelector) {
+    if (document.querySelectorAll(platform.turnSelector).length === 0)
+      warnings.push('turnSelector 매칭 없음: ' + platform.turnSelector);
+  }
+  if (platform.roleDetect === 'dual-selector') {
+    var u = platform.userSelector ?
+      document.querySelectorAll(platform.userSelector).length : 0;
+    var a = platform.assistantSelector ?
+      document.querySelectorAll(platform.assistantSelector).length : 0;
+    if (u === 0 && a === 0) {
+      warnings.push('USER/ASSISTANT 셀렉터 모두 매칭 없음');
+      return { ok: false, reason: 'selector_broken', warnings: warnings };
+    }
+  }
+  return { ok: warnings.length === 0, warnings: warnings };
+};
+
+CK.showSelectorWarning = function(platformName, broken) {
+  if (document.getElementById('ck-selector-warn')) return;
+  var banner = document.createElement('div');
+  banner.id = 'ck-selector-warn';
+  var bg = broken ? '#ef4444' : '#f59e0b';
+  banner.style.cssText =
+    'position:fixed;bottom:70px;right:16px;' +
+    'background:' + bg + ';color:#fff;' +
+    'padding:10px 14px;border-radius:8px;font-size:12px;' +
+    'z-index:2147483647;max-width:260px;line-height:1.6;' +
+    'box-shadow:0 2px 12px rgba(0,0,0,0.25);font-family:sans-serif;';
+  var icon = broken ? '🔴' : '⚠️';
+  var title = broken ? ' 저장 실패' : ' 저장 불완전 가능성';
+  var body = broken
+    ? '<b>' + platformName + '</b> UI가 변경되어<br>대화를 인식하지 못했습니다.'
+    : '<b>' + platformName + '</b> UI가 변경된 것 같습니다.<br>저장이 불완전할 수 있습니다.';
+  banner.innerHTML =
+    '<div style="font-weight:bold;margin-bottom:4px">' + icon + title + '</div>' +
+    body +
+    '<div style="margin-top:8px;font-size:11px;opacity:0.8">' +
+    '자동으로 복구를 시도합니다.</div>' +
+    '<button onclick="this.parentElement.remove()" ' +
+    'style="position:absolute;top:6px;right:8px;background:none;border:none;' +
+    'color:#fff;cursor:pointer;font-size:14px;">✕</button>';
+  banner.style.position = 'fixed';
+  document.body.appendChild(banner);
+  setTimeout(function() {
+    var el = document.getElementById('ck-selector-warn');
+    if (el) el.remove();
+  }, 8000);
+};
+
+CK.reportBrokenSelector = function(platform, selector) {
+  var url = CK.CONFIG.WORKER_URL + '/api/report';
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      platform: platform,
+      url: window.location.href,
+      selector: selector
+    })
+  }).catch(function() {});
+};

@@ -382,6 +382,16 @@
     }, 20000);
 
     console.log('[CK] Context Keeper v0.9 active (modular + autorun + hash-detect)');
+    // 원격 셀렉터 동기화 (UI 변경 대응)
+    CK.fetchRemoteSelectors && CK.fetchRemoteSelectors().then(function() {
+      var validation = CK.validateSelectors ? CK.validateSelectors() : { ok: true };
+      if (!validation.ok) {
+        var platformName = CK.getPlatformKey ? CK.getPlatformKey() : 'unknown';
+        var broken = validation.reason === 'selector_broken';
+        CK.showSelectorWarning && CK.showSelectorWarning(platformName, broken);
+        if (broken) CK.reportBrokenSelector && CK.reportBrokenSelector(platformName, validation.warnings[0] || '');
+      }
+    });
     CK.checkForNewTurns();
 
     var lastCheckedUrl = '';

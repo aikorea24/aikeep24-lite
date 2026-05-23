@@ -68,6 +68,8 @@ CK.CONFIG = {
 
 // Mode B: Cloudflare Worker 설정
 CK.CONFIG.WORKER_URL = 'https://aikeep24lite-worker.hugh79757.workers.dev';
+CK.CONFIG.SELECTOR_UPDATE_URL = CK.CONFIG.WORKER_URL + '/api/selectors';
+CK.CONFIG.SELECTOR_VERSION = 0;
 CK.CONFIG.API_KEY    = 'ck_f6b84f10d7f64713b9c2d7d606253e87';
 
 CK.enabled = true;
