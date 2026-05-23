@@ -125,215 +125,36 @@
     };
     btnBox.appendChild(btnBrowse);
 
+    // === MD 다운로드 버튼 ===
+    var btnMd = document.createElement('button');
+    btnMd.id = 'ck-md-btn';
+    btnMd.innerText = 'MD';
+    btnMd.style.cssText = 'background:#fbbf24;color:#0f172a;' + btnStyle;
+    btnMd.onclick = function() {
+      var turns = CK.extractTurns ? CK.extractTurns() : [];
+      if (!turns || turns.length === 0) {
+        CK.updateBadge('MD: 대화 없음');
+        return;
+      }
+      // 클립보드 복사 (Obsidian/Notion용)
+      CK.copyMd(turns).then(function() {
+        CK.updateBadge('MD 클립보드 복사 완료 (' + turns.length + '턴)');
+        setTimeout(function(){
+          var b = document.getElementById('ck-badge');
+          if (b) b.style.display = 'none';
+        }, 3000);
+      });
+      // 파일 다운로드 동시 실행
+      CK.downloadMd(turns);
+      btnMd.innerText = '✓';
+      setTimeout(function(){ btnMd.innerText = 'MD'; }, 1500);
+    };
+    btnBox.appendChild(btnMd);
+
     panel.appendChild(btnBox);
     panel.appendChild(badge);
     document.body.appendChild(panel);
   };
 
-  // === INJ 실행 ===
-  function doInject(mode) {
-    var badge = document.getElementById('ck-badge');
-    try { chrome.runtime.id; } catch(e) {
-      if (badge) { badge.innerText = '확장 리로드됨. 페이지 새로고침(Cmd+R) 필요'; badge.style.display = 'block'; }
-      return;
-    }
-    if (badge) { badge.innerText = 'D1에서 불러오는 중...'; badge.style.display = 'block'; }
-
-    var currentUrl = window.location.href;
-    CK.fetchSessionByUrl(currentUrl).then(function(data) {
-      var sessions = data.sessions || [];
-      if (sessions.length === 0) {
-        // 프로젝트 누적 컨텍스트 시도
-        return tryProjectInject(mode);
-      }
-      var s = sessions.sort(function(a, b) { return (b.total_chunks || 0) - (a.total_chunks || 0); })[0];
-      return CK.fetchSession(s.session_id);
-    }).then(function(s) {
-      if (!s || !s.session_id) return;
-      var ctx = buildCtxFromSession(s);
-
-      // 프로젝트 누적: 같은 프로젝트의 다른 세션도 가져오기
-      if (mode === 'full' && ctx.project && ctx.project !== 'unknown') {
-        return CK.fetchProjectContext(ctx.project).then(function(allSessions) {
-          if (allSessions.length > 1) {
-            var text = CK.buildProjectContext(allSessions, mode);
-            return clipAndNotify(text, 'Project context (' + allSessions.length + ' sessions)', mode);
-          }
-          return applyInject(ctx, mode);
-        });
-      }
-      return applyInject(ctx, mode);
-    }).catch(function(e) {
-      if (badge) {
-        badge.innerText = 'D1 error: ' + e.message;
-        setTimeout(function() { badge.style.display = 'none'; }, 3000);
-      }
-    });
-  }
-
-  /* tryProjectInject: Phase 3에서 구현 */
-
-  /* buildCtxFromSession: Phase 3에서 구현 */
-
-  /* applyInject: Phase 3에서 구현 */
-
-  /* clipAndNotify: Phase 3에서 구현 */
-
-  // === BRW 패널 로드 ===
-  function loadBrowsePanel(browsePanel, badge) {
-    browsePanel.innerHTML = '<div style="padding:4px 6px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:4px;"><input id="ck-search-input" type="text" placeholder="벡터 검색..." style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(103,232,249,0.25);border-radius:6px;color:#e4e4e7;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;"/></div><div id="ck-brw-content" style="color:#888;font-size:11px;padding:4px 8px;">Loading...</div>';
-
-    setTimeout(function() {
-      var searchInput = document.getElementById('ck-search-input');
-      if (searchInput) {
-        searchInput.addEventListener('keydown', function(ev) {
-          if (ev.key === 'Enter' && searchInput.value.trim().length > 0) {
-            ev.preventDefault();
-            doVectorSearch(searchInput.value.trim(), badge);
-          }
-        });
-      }
-    }, 100);
-
-    loadCurrentSessionChunks(badge);
-  }
-
-  function doVectorSearch(query, badge) {
-    var contentDiv = document.getElementById('ck-brw-content');
-    if (contentDiv) contentDiv.innerHTML = '<div style="color:#888;font-size:11px;padding:4px 8px;">Searching...</div>';
-    CK.vectorSearch(query, 8).then(function(data) {
-      var res = data.results || [];
-      if (!contentDiv) return;
-      if (res.length === 0) { contentDiv.innerHTML = '<div style="color:#888;font-size:11px;padding:4px 8px;">No results</div>'; return; }
-      var sh = '<div style="color:#ffd166;font-size:10px;font-weight:700;padding:2px 8px;">' + res.length + ' results</div>';
-      res.forEach(function(r) {
-        var score = Math.round((r.score || 0) * 100);
-        var tR = 'T' + (r.turn_start || 0) + '-' + (r.turn_end || 0);
-        var proj = r.project || '';
-        var sum = (r.chunk_summary || '').substring(0, 60);
-        sh += '<div style="padding:4px 8px;cursor:pointer;border-radius:4px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.4;" data-search-sid="' + r.session_id + '"><span style="color:#34d399;font-size:9px;">' + score + '%</span> <span style="color:#f472b6;">' + proj + '</span> <span style="color:#a78bfa;">' + tR + '</span><br/>' + sum + '</div>';
-      });
-      contentDiv.innerHTML = sh;
-      contentDiv.querySelectorAll('[data-search-sid]').forEach(function(el) {
-        el.onclick = function() {
-          var sid = el.getAttribute('data-search-sid');
-          CK.fetchSession(sid).then(function(sess) {
-            var allChunks = (sess.chunks || []).sort(function(a, b) { return (a.chunk_index || 0) - (b.chunk_index || 0); });
-            var lines = ['[CONTEXT from Vector Search]', 'Project: ' + (sess.project || 'unknown') + ' | Chunks: ' + allChunks.length, ''];
-            allChunks.forEach(function(ck, idx) {
-              lines.push('[Chunk ' + (idx + 1) + ' T' + (ck.turn_start || 0) + '-' + (ck.turn_end || 0) + ']');
-              lines.push(ck.raw_content || ck.chunk_summary || '(no data)');
-              lines.push('');
-            });
-            var txt = lines.join('\n');
-            navigator.clipboard.writeText(txt).then(function() {
-              CK.updateBadge('Full session (' + allChunks.length + ' chunks, ' + txt.length + ' chars) copied');
-              setTimeout(function() { badge.style.display = 'none'; }, 4000);
-            });
-          });
-        };
-      });
-    }).catch(function(e) {
-      if (contentDiv) contentDiv.innerHTML = '<div style="color:#f87171;font-size:11px;padding:4px 8px;">Error: ' + e.message + '</div>';
-    });
-  }
-
-  function loadCurrentSessionChunks(badge) {
-    var cid = CK.getChatId();
-    CK.fetchSession(cid).then(function(sess) {
-      var chunks = (sess.chunks || []).sort(function(a, b) { return (a.chunk_index || 0) - (b.chunk_index || 0); });
-      var contentDiv = document.getElementById('ck-brw-content');
-      if (!contentDiv) return;
-      var html = '';
-      if (chunks.length > 0) {
-        html += '<div style="color:#34d399;font-size:10px;font-weight:700;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:2px;">THIS CHAT (' + chunks.length + ' chunks)</div>';
-        chunks.forEach(function(ch, i) {
-          var tRange = 'T' + (ch.turn_start || 0) + '-' + (ch.turn_end || 0);
-          var rawSum = ch.chunk_summary || ch.chunk_checkpoint || '(요약 없음)';
-          var sum = tRange + ' ' + rawSum.substring(0, 45);
-          var hasRaw = ch.raw_content && ch.raw_content.length > 0;
-          html += '<div style="padding:3px 8px;cursor:pointer;border-radius:4px;font-size:10px;color:#d4d4d8;transition:background 0.15s;line-height:1.3;" data-chunk-idx="' + i + '"><span style="color:#a78bfa;">[' + (i + 1) + ']</span> ' + sum + '...' + (hasRaw ? ' <span style="color:#ffd166;font-size:8px;">[RAW]</span>' : '') + '</div>';
-        });
-        html += '<div style="border-top:1px solid rgba(255,255,255,0.1);margin:2px 0;"></div>';
-      } else {
-        html += '<div style="color:#888;font-size:10px;padding:4px 8px;">No chunks yet. Run first.</div>';
-        html += '<div style="border-top:1px solid rgba(255,255,255,0.1);margin:2px 0;"></div>';
-      }
-      html += '<div style="color:#34d399;font-size:10px;font-weight:700;padding:4px 8px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.1);" id="ck-brw-all-sessions">ALL SESSIONS</div>';
-
-      contentDiv.innerHTML = html;
-
-      // 청크 클릭 → 클립보드 복사
-      contentDiv.querySelectorAll('[data-chunk-idx]').forEach(function(el) {
-        el.onclick = function() {
-          var idx = parseInt(el.getAttribute('data-chunk-idx'));
-          var ch = chunks[idx];
-          if (!ch) return;
-          var txt = (ch.raw_content && ch.raw_content.length > 0) ? ch.raw_content : (ch.chunk_summary || '') + '\n\n' + (ch.chunk_checkpoint || '');
-          navigator.clipboard.writeText(txt).then(function() {
-            CK.updateBadge(ch.raw_content ? 'Raw (' + ch.raw_content.length + ' chars) copied' : 'Summary copied');
-            setTimeout(function() { badge.style.display = 'none'; }, 3000);
-          });
-        };
-      });
-
-      // ALL SESSIONS
-      var allBtn = document.getElementById('ck-brw-all-sessions');
-      if (allBtn) {
-        allBtn.onclick = function() { loadAllSessions(contentDiv, badge); };
-      }
-    }).catch(function() {
-      var contentDiv = document.getElementById('ck-brw-content');
-      if (contentDiv) contentDiv.innerHTML = '<div style="color:#888;font-size:10px;padding:4px 8px;">No chunks yet. Run first.</div><div style="color:#34d399;font-size:10px;font-weight:700;padding:4px 8px;cursor:pointer;" id="ck-brw-all-sessions">ALL SESSIONS</div>';
-      var allBtn = document.getElementById('ck-brw-all-sessions');
-      if (allBtn) allBtn.onclick = function() { loadAllSessions(contentDiv, badge); };
-    });
-  }
-
-  function loadAllSessions(container, badge) {
-    container.innerHTML = '<div style="color:#888;font-size:11px;padding:4px 8px;">Loading sessions...</div>';
-    CK.fetchSessions(30).then(function(j) {
-      var sessions = j.results || [];
-      if (!sessions.length) { container.innerHTML = '<div style="color:#888;font-size:11px;">No sessions</div>'; return; }
-      var sh = '<div style="color:#34d399;font-size:10px;padding:2px 8px;font-weight:700;">ALL SESSIONS (' + sessions.length + ')</div>';
-      sessions.forEach(function(s) {
-        var label = s.project || s.title || s.session_id.substring(0, 8);
-        sh += '<div style="padding:3px 8px;cursor:pointer;border-radius:6px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);" data-sid="' + s.session_id + '">' + label + ' <span style="color:#666;">(' + (s.total_turns || 0) + 't)</span></div>';
-      });
-      container.innerHTML = sh;
-      container.querySelectorAll('[data-sid]').forEach(function(sel) {
-        sel.onclick = function() {
-          var sid = sel.getAttribute('data-sid');
-          loadSessionChunks(sid, container, badge);
-        };
-      });
-    });
-  }
-
-  function loadSessionChunks(sid, container, badge) {
-    container.innerHTML = '<div style="color:#888;font-size:11px;padding:4px 8px;">Loading chunks...</div>';
-    CK.fetchSession(sid).then(function(sess) {
-      var cks = sess.chunks || [];
-      if (!cks.length) { container.innerHTML = '<div style="color:#888;font-size:11px;">No chunks</div>'; return; }
-      var ch = '<div style="color:#34d399;font-size:10px;padding:2px 8px;font-weight:700;">' + (sess.project || sess.title || sid.substring(0, 8)) + ' (' + cks.length + ' chunks)</div>';
-      cks.forEach(function(ck, idx) {
-        var tR = 'T' + (ck.turn_start || 0) + '-' + (ck.turn_end || 0);
-        var sm = tR + ' ' + (ck.chunk_summary || '(요약 없음)').substring(0, 50);
-        var hasR = ck.raw_content && ck.raw_content.length > 0;
-        ch += '<div style="padding:3px 8px;cursor:pointer;border-radius:6px;font-size:10px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.05);" data-cidx="' + idx + '">[' + (idx + 1) + '] ' + sm + (hasR ? ' <span style="color:#34d399">[RAW]</span>' : '') + '</div>';
-      });
-      container.innerHTML = ch;
-      container.querySelectorAll('[data-cidx]').forEach(function(cel) {
-        cel.onclick = function() {
-          var ci = parseInt(cel.getAttribute('data-cidx'));
-          var chk = cks[ci];
-          var txt = (chk.raw_content && chk.raw_content.length > 0) ? chk.raw_content : (chk.chunk_summary || '') + '\n\n' + (chk.chunk_checkpoint || '');
-          navigator.clipboard.writeText(txt).then(function() {
-            CK.updateBadge(chk.raw_content ? 'Raw (' + chk.raw_content.length + ' chars) copied' : 'Summary copied');
-          });
-        };
-      });
-    });
-  }
 
 })();

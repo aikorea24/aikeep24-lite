@@ -188,6 +188,10 @@
                 '<div style="font-size:11px;color:#e2e8f0;margin-top:2px;line-height:1.4;' +
                   'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + safeTitle + '</div>' +
               '</div>' +
+              '<button class="ck-md-dl" data-cid="' + s.chunk_id + '" ' +
+                'style="background:none;border:none;cursor:pointer;font-size:11px;' +
+                'padding:0 4px 0 0;color:#fbbf24;flex-shrink:0;line-height:1;" ' +
+                'title="MD 다운로드">⬇</button>' +
               '<button class="ck-pin-btn" data-cid="' + s.chunk_id + '" ' +
                 'style="background:none;border:none;cursor:pointer;font-size:13px;' +
                 'padding:0 0 0 6px;color:' + (isPinned ? '#ffd166' : '#475569') + ';flex-shrink:0;line-height:1;">' +
@@ -212,6 +216,29 @@
           });
           el.addEventListener('mouseenter', function() { el.style.background = 'rgba(103,232,249,0.08)'; });
           el.addEventListener('mouseleave', function() { el.style.background = ''; });
+        });
+
+        listEl.querySelectorAll('.ck-md-dl').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var cid = btn.getAttribute('data-cid');
+            CK.IndexedDBStore.getAllChunks().then(function(chunks) {
+              var chunk = chunks.find(function(c) { return c.chunk_id === cid; });
+              if (!chunk) return;
+              var turns = [];
+              var lines = (chunk.raw_content || '').split('\n\n---\n\n');
+              lines.forEach(function(block) {
+                var m = block.match(/^##\s*\[(USER|ASSISTANT)\]\n\n([\s\S]+)$/);
+                if (m) turns.push({ role: m[1].toLowerCase(), text: m[2].trim() });
+              });
+              if (turns.length === 0) turns = [{ role: 'user', text: chunk.raw_content || '' }];
+              CK.downloadMd(turns, {
+                platform: chunk.platform,
+                url: chunk.session_url,
+                title: chunk.session_id
+              });
+            });
+          });
         });
 
         listEl.querySelectorAll('.ck-pin-btn').forEach(function(btn) {

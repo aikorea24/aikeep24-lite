@@ -102,6 +102,53 @@
   /**
    * 해시 기반 변경 감지: 마지막 턴 텍스트의 앞 N자를 해시
    */
+
+  CK.formatChunkMd = function(turnList, meta) {
+    meta = meta || {};
+    var now = new Date().toISOString();
+    var platform = meta.platform || CK.getPlatformKey();
+    var url = meta.url || window.location.href;
+    var title = meta.title || document.title || 'Untitled';
+    var turns = turnList.length;
+
+    var yaml = '---\n' +
+      'title: "' + title.replace(/"/g, '\'') + '"\n' +
+      'platform: ' + platform + '\n' +
+      'url: ' + url + '\n' +
+      'saved_at: ' + now + '\n' +
+      'turns: ' + turns + '\n' +
+      '---\n\n';
+
+    var body = turnList.map(function(t) {
+      var label = t.role === 'user' ? '## 👤 User' : '## 🤖 Assistant';
+      return label + '\n\n' + t.text;
+    }).join('\n\n---\n\n');
+
+    return yaml + body;
+  };
+
+  CK.downloadMd = function(turnList, meta) {
+    var md = CK.formatChunkMd(turnList, meta);
+    var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var platform = CK.getPlatformKey();
+    var date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = platform + '_' + date + '_' + CK.getChatId().slice(0, 8) + '.md';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  CK.copyMd = function(turnList, meta) {
+    var md = CK.formatChunkMd(turnList, meta);
+    return navigator.clipboard.writeText(md);
+  };
+
   CK.computeTurnHash = function(turns) {
     if (!turns || turns.length === 0) return '';
     var lastText = turns[turns.length - 1].text || '';
